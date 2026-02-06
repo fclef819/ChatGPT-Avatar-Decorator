@@ -7,6 +7,9 @@
   const elGlobalImages = document.getElementById("globalImages");
   const elSaveGlobal = document.getElementById("saveGlobal");
   const elGlobalSentimentHint = document.getElementById("globalSentimentHint");
+  const elGlobalAvatarSize = document.getElementById("globalAvatarSize");
+  const elGlobalNameSize = document.getElementById("globalNameSize");
+  const elGlobalPreview = document.getElementById("globalPreview");
 
   const elProjectId = document.getElementById("projectId");
   const elProjectUrl = document.getElementById("projectUrl");
@@ -18,6 +21,9 @@
   const elClearProject = document.getElementById("clearProject");
   const elProjectList = document.getElementById("projectList");
   const elProjectSentimentHint = document.getElementById("projectSentimentHint");
+  const elProjectAvatarSize = document.getElementById("projectAvatarSize");
+  const elProjectNameSize = document.getElementById("projectNameSize");
+  const elProjectPreview = document.getElementById("projectPreview");
   const elExportSettings = document.getElementById("exportSettings");
   const elImportSettings = document.getElementById("importSettings");
   const elToast = document.getElementById("toast");
@@ -99,7 +105,9 @@
       global: {
         name: "",
         mode: "random",
-        images: Array(MAX_IMAGES).fill("")
+        images: Array(MAX_IMAGES).fill(""),
+        avatarSize: 35,
+        nameSize: 13
       },
       projects: {}
     };
@@ -112,7 +120,15 @@
       const normalized = normalizeProjectId(key);
       if (!normalized) continue;
       if (!normalizedProjects[normalized]) {
-        normalizedProjects[normalized] = value;
+        normalizedProjects[normalized] = {
+          name: value?.name || "",
+          mode: value?.mode || "random",
+          images: Array(MAX_IMAGES)
+            .fill("")
+            .map((_, i) => value?.images?.[i] || ""),
+          avatarSize: value?.avatarSize ?? 35,
+          nameSize: value?.nameSize ?? 13
+        };
       }
     }
     return {
@@ -121,7 +137,9 @@
         mode: settings?.global?.mode || "random",
         images: Array(MAX_IMAGES)
           .fill("")
-          .map((_, i) => settings?.global?.images?.[i] || "")
+          .map((_, i) => settings?.global?.images?.[i] || ""),
+        avatarSize: settings?.global?.avatarSize ?? 35,
+        nameSize: settings?.global?.nameSize ?? 13
       },
       projects: normalizedProjects
     };
@@ -134,9 +152,12 @@
 
       elGlobalName.value = merged.global.name || "";
       elGlobalMode.value = merged.global.mode || "random";
+      elGlobalAvatarSize.value = merged.global.avatarSize ?? 35;
+      elGlobalNameSize.value = merged.global.nameSize ?? 13;
       syncSentimentHint(elGlobalMode.value, elGlobalSentimentHint);
       globalImages = [...merged.global.images];
-      buildImageSlots(elGlobalImages, globalImages);
+      buildImageSlots(elGlobalImages, globalImages, updateGlobalPreview);
+      updateGlobalPreview();
 
       renderProjectList();
     });
@@ -169,9 +190,12 @@
       saveSettings();
       elGlobalName.value = settingsCache.global.name || "";
       elGlobalMode.value = settingsCache.global.mode || "random";
+      elGlobalAvatarSize.value = settingsCache.global.avatarSize ?? 35;
+      elGlobalNameSize.value = settingsCache.global.nameSize ?? 13;
       syncSentimentHint(elGlobalMode.value, elGlobalSentimentHint);
       globalImages = [...settingsCache.global.images];
-      buildImageSlots(elGlobalImages, globalImages);
+      buildImageSlots(elGlobalImages, globalImages, updateGlobalPreview);
+      updateGlobalPreview();
       clearProjectForm();
       renderProjectList();
       showToast("設定を読み込みました");
@@ -195,6 +219,8 @@
     settingsCache.global.name = elGlobalName.value.trim();
     settingsCache.global.mode = elGlobalMode.value;
     settingsCache.global.images = [...globalImages];
+    settingsCache.global.avatarSize = clampNumber(elGlobalAvatarSize.value, 16, 96, 35);
+    settingsCache.global.nameSize = clampNumber(elGlobalNameSize.value, 10, 32, 13);
     saveSettings();
     showToast("全体設定を保存しました");
   }
@@ -209,7 +235,9 @@
     settingsCache.projects[projectId] = {
       name: elProjectName.value.trim(),
       mode: elProjectMode.value,
-      images: [...projectImages]
+      images: [...projectImages],
+      avatarSize: clampNumber(elProjectAvatarSize.value, 16, 96, 35),
+      nameSize: clampNumber(elProjectNameSize.value, 10, 32, 13)
     };
     saveSettings();
     renderProjectList();
@@ -220,9 +248,12 @@
     elProjectId.value = "";
     elProjectName.value = "";
     elProjectMode.value = "random";
+    elProjectAvatarSize.value = 35;
+    elProjectNameSize.value = 13;
     syncSentimentHint(elProjectMode.value, elProjectSentimentHint);
     projectImages = Array(MAX_IMAGES).fill("");
-    buildImageSlots(elProjectImages, projectImages);
+    buildImageSlots(elProjectImages, projectImages, updateProjectPreview);
+    updateProjectPreview();
   }
 
   function renderProjectList() {
@@ -254,11 +285,14 @@
         elProjectId.value = projectId;
         elProjectName.value = profile.name || "";
         elProjectMode.value = profile.mode || "random";
+        elProjectAvatarSize.value = profile.avatarSize ?? 35;
+        elProjectNameSize.value = profile.nameSize ?? 13;
         syncSentimentHint(elProjectMode.value, elProjectSentimentHint);
         projectImages = Array(MAX_IMAGES)
           .fill("")
           .map((_, i) => profile.images?.[i] || "");
-        buildImageSlots(elProjectImages, projectImages);
+        buildImageSlots(elProjectImages, projectImages, updateProjectPreview);
+        updateProjectPreview();
       });
 
       const remove = document.createElement("button");
@@ -292,6 +326,12 @@
     importSettings(file);
     elImportSettings.value = "";
   });
+  elGlobalName.addEventListener("input", updateGlobalPreview);
+  elGlobalAvatarSize.addEventListener("input", updateGlobalPreview);
+  elGlobalNameSize.addEventListener("input", updateGlobalPreview);
+  elProjectName.addEventListener("input", updateProjectPreview);
+  elProjectAvatarSize.addEventListener("input", updateProjectPreview);
+  elProjectNameSize.addEventListener("input", updateProjectPreview);
   elExtractProjectId.addEventListener("click", () => {
     const raw = elProjectUrl.value.trim();
     const id = normalizeProjectId(raw);
@@ -303,8 +343,9 @@
     showToast("projectId を抽出しました");
   });
 
-  buildImageSlots(elProjectImages, projectImages);
+  buildImageSlots(elProjectImages, projectImages, updateProjectPreview);
   syncSentimentHint(elProjectMode.value, elProjectSentimentHint);
+  updateProjectPreview();
   loadSettings();
 
   function normalizeProjectId(input) {
@@ -313,6 +354,55 @@
     const match = input.match(/(g-p-[0-9a-f]{32})/i);
     if (match) return match[1];
     return input;
+  }
+
+  function clampNumber(value, min, max, fallback) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return fallback;
+    return Math.max(min, Math.min(max, num));
+  }
+
+  function getFirstImage(images) {
+    return (images || []).find((v) => v) || "";
+  }
+
+  function updateGlobalPreview() {
+    updatePreview(elGlobalPreview, {
+      name: elGlobalName.value.trim(),
+      avatarSize: clampNumber(elGlobalAvatarSize.value, 16, 96, 35),
+      nameSize: clampNumber(elGlobalNameSize.value, 10, 32, 13),
+      image: getFirstImage(globalImages)
+    });
+  }
+
+  function updateProjectPreview() {
+    updatePreview(elProjectPreview, {
+      name: elProjectName.value.trim(),
+      avatarSize: clampNumber(elProjectAvatarSize.value, 16, 96, 35),
+      nameSize: clampNumber(elProjectNameSize.value, 10, 32, 13),
+      image: getFirstImage(projectImages)
+    });
+  }
+
+  function updatePreview(container, profile) {
+    if (!container) return;
+    const avatar = container.querySelector(".preview-avatar");
+    const name = container.querySelector(".preview-name");
+    if (avatar) {
+      avatar.style.width = `${profile.avatarSize}px`;
+      avatar.style.height = `${profile.avatarSize}px`;
+      if (profile.image) {
+        avatar.style.backgroundImage = `url(${profile.image})`;
+        avatar.classList.remove("is-empty");
+      } else {
+        avatar.style.backgroundImage = "";
+        avatar.classList.add("is-empty");
+      }
+    }
+    if (name) {
+      name.textContent = profile.name || "プレビュー";
+      name.style.fontSize = `${profile.nameSize}px`;
+    }
   }
 
   function syncSentimentHint(mode, elHint) {

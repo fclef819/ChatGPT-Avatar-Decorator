@@ -31,6 +31,31 @@
             画像スロット1→5の順で、ネガティブ→ポジティブに配置してください。
           </p>
         </div>
+        <div class="size-preview-row">
+          <div class="size-panel">
+            <div class="field field-compact">
+              <label for="globalAvatarSize">画像サイズ(px)</label>
+              <input id="globalAvatarSize" type="number" min="16" max="96" step="1" />
+            </div>
+            <div class="field field-compact">
+              <label for="globalNameSize">名前サイズ(px)</label>
+              <input id="globalNameSize" type="number" min="10" max="32" step="1" />
+            </div>
+          </div>
+          <div class="preview-panel">
+            <label class="preview-label">プレビュー</label>
+            <div class="preview message-preview" id="globalPreview">
+              <div class="preview-header">
+                <div class="preview-avatar"></div>
+                <div class="preview-name"></div>
+              </div>
+              <div class="preview-bubble">
+                <div class="preview-line"></div>
+                <div class="preview-line short"></div>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="actions">
           <button id="saveGlobal">全体設定を保存</button>
         </div>
@@ -71,6 +96,31 @@
           <p class="hint sentiment-hint" id="projectSentimentHint">
             画像スロット1→5の順で、ネガティブ→ポジティブに配置してください。
           </p>
+        </div>
+        <div class="size-preview-row">
+          <div class="size-panel">
+            <div class="field field-compact">
+              <label for="projectAvatarSize">画像サイズ(px)</label>
+              <input id="projectAvatarSize" type="number" min="16" max="96" step="1" />
+            </div>
+            <div class="field field-compact">
+              <label for="projectNameSize">名前サイズ(px)</label>
+              <input id="projectNameSize" type="number" min="10" max="32" step="1" />
+            </div>
+          </div>
+          <div class="preview-panel">
+            <label class="preview-label">プレビュー</label>
+            <div class="preview message-preview" id="projectPreview">
+              <div class="preview-header">
+                <div class="preview-avatar"></div>
+                <div class="preview-name"></div>
+              </div>
+              <div class="preview-bubble">
+                <div class="preview-line"></div>
+                <div class="preview-line short"></div>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="actions">
           <button id="saveProject">プロジェクト設定を保存/更新</button>

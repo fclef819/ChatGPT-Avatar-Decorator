@@ -1,6 +1,7 @@
 .cad-message {
   --cad-avatar-size: 35px;
   --cad-header-gap: 8px;
+  --cad-name-size: 13px;
   position: relative;
   padding-top: calc(var(--cad-avatar-size) + var(--cad-header-gap));
 }
@@ -25,7 +26,7 @@
 }
 
 .cad-name {
-  font-size: 13px;
+  font-size: var(--cad-name-size);
   font-weight: 600;
   opacity: 0.8;
   margin-right: 4px;

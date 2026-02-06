@@ -103,6 +103,12 @@
     if (!name && !imgSrc) return;
 
     messageEl.classList.add("cad-message");
+    if (profile.avatarSize) {
+      messageEl.style.setProperty("--cad-avatar-size", `${profile.avatarSize}px`);
+    }
+    if (profile.nameSize) {
+      messageEl.style.setProperty("--cad-name-size", `${profile.nameSize}px`);
+    }
 
     const header = document.createElement("div");
     header.className = "cad-header";
