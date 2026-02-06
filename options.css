@@ -33,6 +33,29 @@ h1 {
   gap: 6px;
 }
 
+.field-child {
+  margin-top: 8px;
+  margin-bottom: 0;
+  padding-left: 12px;
+  border-left: 2px solid #e3d2a8;
+}
+
+.field-child label {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.inline-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.inline-row input[type="text"] {
+  flex: 1 1 240px;
+}
+
 label {
   font-size: 13px;
   font-weight: 700;

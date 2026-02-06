@@ -9,6 +9,8 @@
   const elGlobalSentimentHint = document.getElementById("globalSentimentHint");
 
   const elProjectId = document.getElementById("projectId");
+  const elProjectUrl = document.getElementById("projectUrl");
+  const elExtractProjectId = document.getElementById("extractProjectId");
   const elProjectName = document.getElementById("projectName");
   const elProjectMode = document.getElementById("projectMode");
   const elProjectImages = document.getElementById("projectImages");
@@ -104,6 +106,15 @@
   }
 
   function mergeSettings(settings) {
+    const normalizedProjects = {};
+    const inputProjects = settings?.projects || {};
+    for (const [key, value] of Object.entries(inputProjects)) {
+      const normalized = normalizeProjectId(key);
+      if (!normalized) continue;
+      if (!normalizedProjects[normalized]) {
+        normalizedProjects[normalized] = value;
+      }
+    }
     return {
       global: {
         name: settings?.global?.name || "",
@@ -112,7 +123,7 @@
           .fill("")
           .map((_, i) => settings?.global?.images?.[i] || "")
       },
-      projects: settings?.projects || {}
+      projects: normalizedProjects
     };
   }
 
@@ -189,7 +200,8 @@
   }
 
   function saveProject() {
-    const projectId = elProjectId.value.trim();
+    const raw = elProjectId.value.trim();
+    const projectId = normalizeProjectId(raw);
     if (!projectId) {
       showToast("projectId を入力してください");
       return;
@@ -280,10 +292,28 @@
     importSettings(file);
     elImportSettings.value = "";
   });
+  elExtractProjectId.addEventListener("click", () => {
+    const raw = elProjectUrl.value.trim();
+    const id = normalizeProjectId(raw);
+    if (!id) {
+      showToast("projectId を抽出できませんでした");
+      return;
+    }
+    elProjectId.value = id;
+    showToast("projectId を抽出しました");
+  });
 
   buildImageSlots(elProjectImages, projectImages);
   syncSentimentHint(elProjectMode.value, elProjectSentimentHint);
   loadSettings();
+
+  function normalizeProjectId(input) {
+    if (!input) return "";
+    // Accept raw id or full URL, but canonicalize to g-p-<32hex> when present.
+    const match = input.match(/(g-p-[0-9a-f]{32})/i);
+    if (match) return match[1];
+    return input;
+  }
 
   function syncSentimentHint(mode, elHint) {
     if (!elHint) return;

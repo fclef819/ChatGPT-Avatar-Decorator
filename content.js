@@ -17,7 +17,11 @@
     let m = path.match(/\/projects\/([^/]+)/);
     if (m) return m[1];
     m = path.match(/\/g\/([^/]+)/);
-    if (m) return m[1];
+    if (m) {
+      const raw = m[1];
+      const base = raw.match(/^(g-p-[0-9a-f]{32})/i);
+      return base ? base[1] : raw;
+    }
     return "";
   }
 
@@ -42,9 +46,8 @@
 
   function getActiveProfile(settings) {
     const projectId = getProjectIdFromUrl();
-    if (projectId && settings.projects?.[projectId]) {
-      return settings.projects[projectId];
-    }
+    if (!projectId) return settings.global;
+    if (settings.projects?.[projectId]) return settings.projects[projectId];
     return settings.global;
   }
 
@@ -131,13 +134,36 @@
     });
   }
 
+  function resetDecorations() {
+    document.querySelectorAll(".cad-header").forEach((el) => el.remove());
+    document.querySelectorAll(".cad-message").forEach((el) => {
+      el.classList.remove("cad-message");
+      el.dataset.cadDecorated = "0";
+    });
+    messageImageCache = new WeakMap();
+  }
+
   const observer = new MutationObserver(() => {
     scanAndDecorate();
   });
 
+  let lastPath = window.location.pathname;
+  let lastProjectId = getProjectIdFromUrl();
+
+  function handleLocationChange() {
+    const path = window.location.pathname;
+    const projectId = getProjectIdFromUrl();
+    if (path === lastPath && projectId === lastProjectId) return;
+    lastPath = path;
+    lastProjectId = projectId;
+    resetDecorations();
+    scanAndDecorate();
+  }
+
   function start() {
     scanAndDecorate();
     observer.observe(document.body, { childList: true, subtree: true });
+    setInterval(handleLocationChange, 800);
   }
 
   chrome.storage.onChanged.addListener((changes, area) => {
