@@ -1,0 +1,32 @@
+.cad-message {
+  --cad-avatar-size: 35px;
+  --cad-header-gap: 8px;
+  position: relative;
+  padding-top: calc(var(--cad-avatar-size) + var(--cad-header-gap));
+}
+
+.cad-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--cad-header-gap);
+  margin: 0;
+  justify-content: flex-start;
+}
+
+.cad-avatar {
+  width: var(--cad-avatar-size);
+  height: var(--cad-avatar-size);
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 var(--cad-avatar-size);
+}
+
+.cad-name {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.8;
+  margin-right: 4px;
+}

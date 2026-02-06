@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ChatGPT Avatar Decorator Options</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="page">
+      <h1>ChatGPT Avatar Decorator</h1>
+      <div id="toast" class="toast" aria-live="polite"></div>
+
+      <section class="card">
+        <h2>全体設定</h2>
+        <div class="field">
+          <label for="globalName">表示名</label>
+          <input id="globalName" type="text" placeholder="例: サポートAI" />
+        </div>
+        <div class="field">
+          <label for="globalMode">画像モード</label>
+          <select id="globalMode">
+            <option value="random">ランダム</option>
+            <option value="sentiment">ポジネガ順(1=ネガ,5=ポジ)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>画像(最大5枚)</label>
+          <div class="image-grid" id="globalImages"></div>
+          <p class="hint sentiment-hint" id="globalSentimentHint">
+            画像スロット1→5の順で、ネガティブ→ポジティブに配置してください。
+          </p>
+        </div>
+        <div class="actions">
+          <button id="saveGlobal">全体設定を保存</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>プロジェクト別設定</h2>
+        <p class="hint">
+          ChatGPTのURLが <code>/projects/&lt;projectId&gt;</code> または
+          <code>/g/&lt;projectId&gt;/c/&lt;chatId&gt;</code> 形式の場合、その
+          <code>projectId</code> を入力してください。
+        </p>
+        <div class="field">
+          <label for="projectId">projectId</label>
+          <input id="projectId" type="text" placeholder="例: 8f2c9c..." />
+        </div>
+        <div class="field">
+          <label for="projectName">表示名</label>
+          <input id="projectName" type="text" placeholder="例: プロジェクト専用AI" />
+        </div>
+        <div class="field">
+          <label for="projectMode">画像モード</label>
+          <select id="projectMode">
+            <option value="random">ランダム</option>
+            <option value="sentiment">ポジネガ順(1=ネガ,5=ポジ)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>画像(最大5枚)</label>
+          <div class="image-grid" id="projectImages"></div>
+          <p class="hint sentiment-hint" id="projectSentimentHint">
+            画像スロット1→5の順で、ネガティブ→ポジティブに配置してください。
+          </p>
+        </div>
+        <div class="actions">
+          <button id="saveProject">プロジェクト設定を保存/更新</button>
+          <button id="clearProject">入力をクリア</button>
+        </div>
+
+        <div class="list" id="projectList"></div>
+      </section>
+
+      <section class="card">
+        <h2>設定の入出力</h2>
+        <div class="actions">
+          <button id="exportSettings">設定をダウンロード</button>
+          <label class="import-label">
+            <input id="importSettings" type="file" accept="application/json" />
+            設定をアップロード
+          </label>
+        </div>
+        <p class="hint">JSONファイルでエクスポート/インポートできます。</p>
+      </section>
+    </main>
+
+    <script src="options.js"></script>
+  </body>
+</html>
