@@ -214,6 +214,7 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   padding: 8px 12px;
   border-radius: 8px;
   border: 1px solid #b7924a;
@@ -224,6 +225,34 @@ button {
 
 .import-label input[type="file"] {
   display: none;
+}
+
+.import-label.is-loading {
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.import-spinner {
+  display: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(120, 87, 24, 0.25);
+  border-top-color: #785718;
+  animation: import-spin 700ms linear infinite;
+}
+
+.import-label.is-loading .import-spinner {
+  display: inline-block;
+}
+
+@keyframes import-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .hint {

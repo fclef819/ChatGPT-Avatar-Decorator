@@ -224,9 +224,10 @@
         <h2>設定の入出力</h2>
         <div class="actions">
           <button id="exportSettings">設定をダウンロード</button>
-          <label class="import-label">
+          <label class="import-label" id="importLabel">
             <input id="importSettings" type="file" accept="application/json" />
-            設定をアップロード
+            <span id="importLabelText">設定をアップロード</span>
+            <span class="import-spinner" aria-hidden="true"></span>
           </label>
         </div>
         <p class="hint">JSONファイルでエクスポート/インポートできます。</p>

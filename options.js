@@ -40,6 +40,8 @@
   const elProjectUserText = document.getElementById("projectUserText");
   const elExportSettings = document.getElementById("exportSettings");
   const elImportSettings = document.getElementById("importSettings");
+  const elImportLabel = document.getElementById("importLabel");
+  const elImportLabelText = document.getElementById("importLabelText");
   const elToast = document.getElementById("toast");
 
   let settingsCache = null;
@@ -47,6 +49,7 @@
   let projectImages = Array(MAX_IMAGES).fill("");
   let globalBgImage = "";
   let projectBgImage = "";
+  let isImporting = false;
 
   function buildImageSlots(container, images, onChange) {
     container.innerHTML = "";
@@ -386,10 +389,17 @@
     syncSentimentHint(elProjectMode.value, elProjectSentimentHint);
   });
   elExportSettings.addEventListener("click", exportSettings);
-  elImportSettings.addEventListener("change", () => {
+  elImportSettings.addEventListener("change", async () => {
+    if (isImporting) return;
     const file = elImportSettings.files?.[0];
-    importSettings(file);
-    elImportSettings.value = "";
+    if (!file) return;
+    setImportLoading(true);
+    try {
+      await importSettings(file);
+    } finally {
+      elImportSettings.value = "";
+      setImportLoading(false);
+    }
   });
   elGlobalName.addEventListener("input", updateGlobalPreview);
   elGlobalAvatarSize.addEventListener("input", updateGlobalPreview);
@@ -547,6 +557,19 @@
     } else {
       previewEl.style.backgroundImage = "";
       previewEl.classList.add("is-empty");
+    }
+  }
+
+  function setImportLoading(value) {
+    isImporting = value;
+    if (elImportLabel) {
+      elImportLabel.classList.toggle("is-loading", value);
+    }
+    if (elImportLabelText) {
+      elImportLabelText.textContent = value ? "読み込み中..." : "設定をアップロード";
+    }
+    if (elImportSettings) {
+      elImportSettings.disabled = value;
     }
   }
 })();
