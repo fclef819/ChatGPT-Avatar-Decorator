@@ -10,6 +10,13 @@
   const elGlobalAvatarSize = document.getElementById("globalAvatarSize");
   const elGlobalNameSize = document.getElementById("globalNameSize");
   const elGlobalPreview = document.getElementById("globalPreview");
+  const elGlobalBgInput = document.getElementById("globalBgInput");
+  const elGlobalBgClear = document.getElementById("globalBgClear");
+  const elGlobalBgPreview = document.getElementById("globalBgPreview");
+  const elGlobalAssistantBg = document.getElementById("globalAssistantBg");
+  const elGlobalAssistantText = document.getElementById("globalAssistantText");
+  const elGlobalUserBg = document.getElementById("globalUserBg");
+  const elGlobalUserText = document.getElementById("globalUserText");
 
   const elProjectId = document.getElementById("projectId");
   const elProjectUrl = document.getElementById("projectUrl");
@@ -24,6 +31,13 @@
   const elProjectAvatarSize = document.getElementById("projectAvatarSize");
   const elProjectNameSize = document.getElementById("projectNameSize");
   const elProjectPreview = document.getElementById("projectPreview");
+  const elProjectBgInput = document.getElementById("projectBgInput");
+  const elProjectBgClear = document.getElementById("projectBgClear");
+  const elProjectBgPreview = document.getElementById("projectBgPreview");
+  const elProjectAssistantBg = document.getElementById("projectAssistantBg");
+  const elProjectAssistantText = document.getElementById("projectAssistantText");
+  const elProjectUserBg = document.getElementById("projectUserBg");
+  const elProjectUserText = document.getElementById("projectUserText");
   const elExportSettings = document.getElementById("exportSettings");
   const elImportSettings = document.getElementById("importSettings");
   const elToast = document.getElementById("toast");
@@ -31,6 +45,8 @@
   let settingsCache = null;
   let globalImages = Array(MAX_IMAGES).fill("");
   let projectImages = Array(MAX_IMAGES).fill("");
+  let globalBgImage = "";
+  let projectBgImage = "";
 
   function buildImageSlots(container, images, onChange) {
     container.innerHTML = "";
@@ -107,7 +123,12 @@
         mode: "random",
         images: Array(MAX_IMAGES).fill(""),
         avatarSize: 35,
-        nameSize: 13
+        nameSize: 13,
+        bgImage: "",
+        assistantBg: "",
+        assistantText: "",
+        userBg: "",
+        userText: ""
       },
       projects: {}
     };
@@ -127,7 +148,12 @@
             .fill("")
             .map((_, i) => value?.images?.[i] || ""),
           avatarSize: value?.avatarSize ?? 35,
-          nameSize: value?.nameSize ?? 13
+          nameSize: value?.nameSize ?? 13,
+          bgImage: value?.bgImage || "",
+          assistantBg: value?.assistantBg || "",
+          assistantText: value?.assistantText || "",
+          userBg: value?.userBg || "",
+          userText: value?.userText || ""
         };
       }
     }
@@ -139,7 +165,12 @@
           .fill("")
           .map((_, i) => settings?.global?.images?.[i] || ""),
         avatarSize: settings?.global?.avatarSize ?? 35,
-        nameSize: settings?.global?.nameSize ?? 13
+        nameSize: settings?.global?.nameSize ?? 13,
+        bgImage: settings?.global?.bgImage || "",
+        assistantBg: settings?.global?.assistantBg || "",
+        assistantText: settings?.global?.assistantText || "",
+        userBg: settings?.global?.userBg || "",
+        userText: settings?.global?.userText || ""
       },
       projects: normalizedProjects
     };
@@ -154,8 +185,14 @@
       elGlobalMode.value = merged.global.mode || "random";
       elGlobalAvatarSize.value = merged.global.avatarSize ?? 35;
       elGlobalNameSize.value = merged.global.nameSize ?? 13;
+      elGlobalAssistantBg.value = merged.global.assistantBg || "";
+      elGlobalAssistantText.value = merged.global.assistantText || "";
+      elGlobalUserBg.value = merged.global.userBg || "";
+      elGlobalUserText.value = merged.global.userText || "";
       syncSentimentHint(elGlobalMode.value, elGlobalSentimentHint);
       globalImages = [...merged.global.images];
+      globalBgImage = merged.global.bgImage || "";
+      updateBgPreview(elGlobalBgPreview, globalBgImage);
       buildImageSlots(elGlobalImages, globalImages, updateGlobalPreview);
       updateGlobalPreview();
 
@@ -192,8 +229,14 @@
       elGlobalMode.value = settingsCache.global.mode || "random";
       elGlobalAvatarSize.value = settingsCache.global.avatarSize ?? 35;
       elGlobalNameSize.value = settingsCache.global.nameSize ?? 13;
+      elGlobalAssistantBg.value = settingsCache.global.assistantBg || "";
+      elGlobalAssistantText.value = settingsCache.global.assistantText || "";
+      elGlobalUserBg.value = settingsCache.global.userBg || "";
+      elGlobalUserText.value = settingsCache.global.userText || "";
       syncSentimentHint(elGlobalMode.value, elGlobalSentimentHint);
       globalImages = [...settingsCache.global.images];
+      globalBgImage = settingsCache.global.bgImage || "";
+      updateBgPreview(elGlobalBgPreview, globalBgImage);
       buildImageSlots(elGlobalImages, globalImages, updateGlobalPreview);
       updateGlobalPreview();
       clearProjectForm();
@@ -221,6 +264,11 @@
     settingsCache.global.images = [...globalImages];
     settingsCache.global.avatarSize = clampNumber(elGlobalAvatarSize.value, 16, 96, 35);
     settingsCache.global.nameSize = clampNumber(elGlobalNameSize.value, 10, 32, 13);
+    settingsCache.global.bgImage = globalBgImage || "";
+    settingsCache.global.assistantBg = elGlobalAssistantBg.value.trim();
+    settingsCache.global.assistantText = elGlobalAssistantText.value.trim();
+    settingsCache.global.userBg = elGlobalUserBg.value.trim();
+    settingsCache.global.userText = elGlobalUserText.value.trim();
     saveSettings();
     showToast("全体設定を保存しました");
   }
@@ -237,7 +285,12 @@
       mode: elProjectMode.value,
       images: [...projectImages],
       avatarSize: clampNumber(elProjectAvatarSize.value, 16, 96, 35),
-      nameSize: clampNumber(elProjectNameSize.value, 10, 32, 13)
+      nameSize: clampNumber(elProjectNameSize.value, 10, 32, 13),
+      bgImage: projectBgImage || "",
+      assistantBg: elProjectAssistantBg.value.trim(),
+      assistantText: elProjectAssistantText.value.trim(),
+      userBg: elProjectUserBg.value.trim(),
+      userText: elProjectUserText.value.trim()
     };
     saveSettings();
     renderProjectList();
@@ -250,8 +303,14 @@
     elProjectMode.value = "random";
     elProjectAvatarSize.value = 35;
     elProjectNameSize.value = 13;
+    elProjectAssistantBg.value = "";
+    elProjectAssistantText.value = "";
+    elProjectUserBg.value = "";
+    elProjectUserText.value = "";
     syncSentimentHint(elProjectMode.value, elProjectSentimentHint);
     projectImages = Array(MAX_IMAGES).fill("");
+    projectBgImage = "";
+    updateBgPreview(elProjectBgPreview, projectBgImage);
     buildImageSlots(elProjectImages, projectImages, updateProjectPreview);
     updateProjectPreview();
   }
@@ -287,10 +346,16 @@
         elProjectMode.value = profile.mode || "random";
         elProjectAvatarSize.value = profile.avatarSize ?? 35;
         elProjectNameSize.value = profile.nameSize ?? 13;
+        elProjectAssistantBg.value = profile.assistantBg || "";
+        elProjectAssistantText.value = profile.assistantText || "";
+        elProjectUserBg.value = profile.userBg || "";
+        elProjectUserText.value = profile.userText || "";
         syncSentimentHint(elProjectMode.value, elProjectSentimentHint);
         projectImages = Array(MAX_IMAGES)
           .fill("")
           .map((_, i) => profile.images?.[i] || "");
+        projectBgImage = profile.bgImage || "";
+        updateBgPreview(elProjectBgPreview, projectBgImage);
         buildImageSlots(elProjectImages, projectImages, updateProjectPreview);
         updateProjectPreview();
       });
@@ -329,9 +394,17 @@
   elGlobalName.addEventListener("input", updateGlobalPreview);
   elGlobalAvatarSize.addEventListener("input", updateGlobalPreview);
   elGlobalNameSize.addEventListener("input", updateGlobalPreview);
+  elGlobalAssistantBg.addEventListener("input", updateGlobalPreview);
+  elGlobalAssistantText.addEventListener("input", updateGlobalPreview);
+  elGlobalUserBg.addEventListener("input", updateGlobalPreview);
+  elGlobalUserText.addEventListener("input", updateGlobalPreview);
   elProjectName.addEventListener("input", updateProjectPreview);
   elProjectAvatarSize.addEventListener("input", updateProjectPreview);
   elProjectNameSize.addEventListener("input", updateProjectPreview);
+  elProjectAssistantBg.addEventListener("input", updateProjectPreview);
+  elProjectAssistantText.addEventListener("input", updateProjectPreview);
+  elProjectUserBg.addEventListener("input", updateProjectPreview);
+  elProjectUserText.addEventListener("input", updateProjectPreview);
   elExtractProjectId.addEventListener("click", () => {
     const raw = elProjectUrl.value.trim();
     const id = normalizeProjectId(raw);
@@ -341,6 +414,36 @@
     }
     elProjectId.value = id;
     showToast("projectId を抽出しました");
+  });
+
+  elGlobalBgInput.addEventListener("change", async () => {
+    const file = elGlobalBgInput.files?.[0];
+    if (!file) return;
+    globalBgImage = await readAsDataUrl(file);
+    updateBgPreview(elGlobalBgPreview, globalBgImage);
+    updateGlobalPreview();
+  });
+
+  elGlobalBgClear.addEventListener("click", () => {
+    globalBgImage = "";
+    elGlobalBgInput.value = "";
+    updateBgPreview(elGlobalBgPreview, globalBgImage);
+    updateGlobalPreview();
+  });
+
+  elProjectBgInput.addEventListener("change", async () => {
+    const file = elProjectBgInput.files?.[0];
+    if (!file) return;
+    projectBgImage = await readAsDataUrl(file);
+    updateBgPreview(elProjectBgPreview, projectBgImage);
+    updateProjectPreview();
+  });
+
+  elProjectBgClear.addEventListener("click", () => {
+    projectBgImage = "";
+    elProjectBgInput.value = "";
+    updateBgPreview(elProjectBgPreview, projectBgImage);
+    updateProjectPreview();
   });
 
   buildImageSlots(elProjectImages, projectImages, updateProjectPreview);
@@ -371,7 +474,12 @@
       name: elGlobalName.value.trim(),
       avatarSize: clampNumber(elGlobalAvatarSize.value, 16, 96, 35),
       nameSize: clampNumber(elGlobalNameSize.value, 10, 32, 13),
-      image: getFirstImage(globalImages)
+      image: getFirstImage(globalImages),
+      bgImage: globalBgImage,
+      assistantBg: elGlobalAssistantBg.value.trim(),
+      assistantText: elGlobalAssistantText.value.trim(),
+      userBg: elGlobalUserBg.value.trim(),
+      userText: elGlobalUserText.value.trim()
     });
   }
 
@@ -380,7 +488,12 @@
       name: elProjectName.value.trim(),
       avatarSize: clampNumber(elProjectAvatarSize.value, 16, 96, 35),
       nameSize: clampNumber(elProjectNameSize.value, 10, 32, 13),
-      image: getFirstImage(projectImages)
+      image: getFirstImage(projectImages),
+      bgImage: projectBgImage,
+      assistantBg: elProjectAssistantBg.value.trim(),
+      assistantText: elProjectAssistantText.value.trim(),
+      userBg: elProjectUserBg.value.trim(),
+      userText: elProjectUserText.value.trim()
     });
   }
 
@@ -403,10 +516,37 @@
       name.textContent = profile.name || "プレビュー";
       name.style.fontSize = `${profile.nameSize}px`;
     }
+    container.style.backgroundImage = profile.bgImage ? `url(${profile.bgImage})` : "";
+    const bubbles = container.querySelectorAll(".preview-bubble");
+    const assistantBubble = container.querySelector(".preview-bubble.assistant");
+    const userBubble = container.querySelector(".preview-bubble.user");
+    bubbles.forEach((bubble) => {
+      bubble.style.color = "";
+      bubble.style.background = "";
+    });
+    if (assistantBubble) {
+      if (profile.assistantBg) assistantBubble.style.background = profile.assistantBg;
+      if (profile.assistantText) assistantBubble.style.color = profile.assistantText;
+    }
+    if (userBubble) {
+      if (profile.userBg) userBubble.style.background = profile.userBg;
+      if (profile.userText) userBubble.style.color = profile.userText;
+    }
   }
 
   function syncSentimentHint(mode, elHint) {
     if (!elHint) return;
     elHint.style.display = mode === "sentiment" ? "block" : "none";
+  }
+
+  function updateBgPreview(previewEl, image) {
+    if (!previewEl) return;
+    if (image) {
+      previewEl.style.backgroundImage = `url(${image})`;
+      previewEl.classList.remove("is-empty");
+    } else {
+      previewEl.style.backgroundImage = "";
+      previewEl.classList.add("is-empty");
+    }
   }
 })();

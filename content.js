@@ -7,7 +7,14 @@
     global: {
       name: "",
       mode: "random",
-      images: Array(MAX_IMAGES).fill("")
+      images: Array(MAX_IMAGES).fill(""),
+      avatarSize: 35,
+      nameSize: 13,
+      bgImage: "",
+      assistantBg: "",
+      assistantText: "",
+      userBg: "",
+      userText: ""
     },
     projects: {}
   };
@@ -33,13 +40,36 @@
   }
 
   function mergeSettings(settings) {
+    const normalizedProjects = {};
+    const inputProjects = settings.projects || {};
+    for (const [key, value] of Object.entries(inputProjects)) {
+      normalizedProjects[key] = {
+        name: value?.name || "",
+        mode: value?.mode || "random",
+        images: Array(MAX_IMAGES).fill("").map((_, i) => value?.images?.[i] || ""),
+        avatarSize: value?.avatarSize ?? 35,
+        nameSize: value?.nameSize ?? 13,
+        bgImage: value?.bgImage || "",
+        assistantBg: value?.assistantBg || "",
+        assistantText: value?.assistantText || "",
+        userBg: value?.userBg || "",
+        userText: value?.userText || ""
+      };
+    }
     const merged = {
       global: {
         name: settings.global?.name || "",
         mode: settings.global?.mode || "random",
-        images: Array(MAX_IMAGES).fill("").map((_, i) => settings.global?.images?.[i] || "")
+        images: Array(MAX_IMAGES).fill("").map((_, i) => settings.global?.images?.[i] || ""),
+        avatarSize: settings.global?.avatarSize ?? 35,
+        nameSize: settings.global?.nameSize ?? 13,
+        bgImage: settings.global?.bgImage || "",
+        assistantBg: settings.global?.assistantBg || "",
+        assistantText: settings.global?.assistantText || "",
+        userBg: settings.global?.userBg || "",
+        userText: settings.global?.userText || ""
       },
-      projects: settings.projects || {}
+      projects: normalizedProjects
     };
     return merged;
   }
@@ -132,11 +162,64 @@
     messageEl.dataset.cadDecorated = "1";
   }
 
+  function applyTheme(profile) {
+    const root = document.documentElement;
+    root.classList.add("cad-root");
+
+    const body = document.body;
+    if (profile.bgImage) {
+      root.style.setProperty("--cad-bg-image", `url("${profile.bgImage}")`);
+      body.classList.add("cad-bg");
+    } else {
+      root.style.setProperty("--cad-bg-image", "none");
+      body.classList.remove("cad-bg");
+    }
+
+    setCssVar(root, "--cad-assistant-bg", profile.assistantBg);
+    setCssVar(root, "--cad-assistant-text", profile.assistantText);
+    setCssVar(root, "--cad-user-bg", profile.userBg);
+    setCssVar(root, "--cad-user-text", profile.userText);
+  }
+
+  function setCssVar(root, key, value) {
+    if (!root) return;
+    if (value) {
+      root.style.setProperty(key, value);
+    } else {
+      root.style.removeProperty(key);
+    }
+  }
+
+  function applyMessageTheme(messageEl, role, profile) {
+    if (!messageEl) return;
+    if (role === "assistant") {
+      if (profile.assistantBg || profile.assistantText) {
+        messageEl.classList.add("cad-message-assistant");
+      } else {
+        messageEl.classList.remove("cad-message-assistant");
+      }
+      messageEl.classList.remove("cad-message-user");
+    } else {
+      if (profile.userBg || profile.userText) {
+        messageEl.classList.add("cad-message-user");
+      } else {
+        messageEl.classList.remove("cad-message-user");
+      }
+      messageEl.classList.remove("cad-message-assistant");
+    }
+  }
+
   function scanAndDecorate() {
     getSettings((settings) => {
       const profile = getActiveProfile(settings);
+      applyTheme(profile);
       const nodes = document.querySelectorAll('div[data-message-author-role="assistant"]');
-      nodes.forEach((el) => decorateMessage(el, profile));
+      nodes.forEach((el) => {
+        applyMessageTheme(el, "assistant", profile);
+        decorateMessage(el, profile);
+      });
+      const userNodes = document.querySelectorAll('div[data-message-author-role="user"]');
+      userNodes.forEach((el) => applyMessageTheme(el, "user", profile));
     });
   }
 
@@ -145,6 +228,12 @@
     document.querySelectorAll(".cad-message").forEach((el) => {
       el.classList.remove("cad-message");
       el.dataset.cadDecorated = "0";
+    });
+    document.querySelectorAll(".cad-message-assistant").forEach((el) => {
+      el.classList.remove("cad-message-assistant");
+    });
+    document.querySelectorAll(".cad-message-user").forEach((el) => {
+      el.classList.remove("cad-message-user");
     });
     messageImageCache = new WeakMap();
   }

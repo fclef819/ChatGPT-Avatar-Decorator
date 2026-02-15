@@ -31,6 +31,47 @@
             画像スロット1→5の順で、ネガティブ→ポジティブに配置してください。
           </p>
         </div>
+        <div class="field">
+          <label>背景画像</label>
+          <div class="bg-row">
+            <div class="bg-preview is-empty" id="globalBgPreview"></div>
+            <div class="bg-controls">
+              <input id="globalBgInput" type="file" accept="image/*" />
+              <button id="globalBgClear" type="button">クリア</button>
+            </div>
+          </div>
+          <p class="hint">画面サイズに合わせて自動調整されます。</p>
+        </div>
+        <div class="field">
+          <label>チャット枠カラー</label>
+          <div class="color-grid">
+            <div class="color-field">
+              <label for="globalAssistantBg">AI 背景色</label>
+              <input
+                id="globalAssistantBg"
+                type="text"
+                placeholder="#ffffff / rgba(0,0,0,0.8)"
+              />
+            </div>
+            <div class="color-field">
+              <label for="globalAssistantText">AI テキスト色</label>
+              <input
+                id="globalAssistantText"
+                type="text"
+                placeholder="#111111 / rgba(0,0,0,0.9)"
+              />
+            </div>
+            <div class="color-field">
+              <label for="globalUserBg">ユーザー背景色</label>
+              <input id="globalUserBg" type="text" placeholder="#f5f5f5 / rgba(0,0,0,0.06)" />
+            </div>
+            <div class="color-field">
+              <label for="globalUserText">ユーザーテキスト色</label>
+              <input id="globalUserText" type="text" placeholder="#111111 / rgba(0,0,0,0.9)" />
+            </div>
+          </div>
+          <p class="hint">未入力ならChatGPTの既定色を使います。</p>
+        </div>
         <div class="size-preview-row">
           <div class="size-panel">
             <div class="field field-compact">
@@ -49,7 +90,11 @@
                 <div class="preview-avatar"></div>
                 <div class="preview-name"></div>
               </div>
-              <div class="preview-bubble">
+              <div class="preview-bubble assistant">
+                <div class="preview-line"></div>
+                <div class="preview-line short"></div>
+              </div>
+              <div class="preview-bubble user">
                 <div class="preview-line"></div>
                 <div class="preview-line short"></div>
               </div>
@@ -97,6 +142,47 @@
             画像スロット1→5の順で、ネガティブ→ポジティブに配置してください。
           </p>
         </div>
+        <div class="field">
+          <label>背景画像</label>
+          <div class="bg-row">
+            <div class="bg-preview is-empty" id="projectBgPreview"></div>
+            <div class="bg-controls">
+              <input id="projectBgInput" type="file" accept="image/*" />
+              <button id="projectBgClear" type="button">クリア</button>
+            </div>
+          </div>
+          <p class="hint">画面サイズに合わせて自動調整されます。</p>
+        </div>
+        <div class="field">
+          <label>チャット枠カラー</label>
+          <div class="color-grid">
+            <div class="color-field">
+              <label for="projectAssistantBg">AI 背景色</label>
+              <input
+                id="projectAssistantBg"
+                type="text"
+                placeholder="#ffffff / rgba(0,0,0,0.8)"
+              />
+            </div>
+            <div class="color-field">
+              <label for="projectAssistantText">AI テキスト色</label>
+              <input
+                id="projectAssistantText"
+                type="text"
+                placeholder="#111111 / rgba(0,0,0,0.9)"
+              />
+            </div>
+            <div class="color-field">
+              <label for="projectUserBg">ユーザー背景色</label>
+              <input id="projectUserBg" type="text" placeholder="#f5f5f5 / rgba(0,0,0,0.06)" />
+            </div>
+            <div class="color-field">
+              <label for="projectUserText">ユーザーテキスト色</label>
+              <input id="projectUserText" type="text" placeholder="#111111 / rgba(0,0,0,0.9)" />
+            </div>
+          </div>
+          <p class="hint">未入力ならChatGPTの既定色を使います。</p>
+        </div>
         <div class="size-preview-row">
           <div class="size-panel">
             <div class="field field-compact">
@@ -115,7 +201,11 @@
                 <div class="preview-avatar"></div>
                 <div class="preview-name"></div>
               </div>
-              <div class="preview-bubble">
+              <div class="preview-bubble assistant">
+                <div class="preview-line"></div>
+                <div class="preview-line short"></div>
+              </div>
+              <div class="preview-bubble user">
                 <div class="preview-line"></div>
                 <div class="preview-line short"></div>
               </div>
