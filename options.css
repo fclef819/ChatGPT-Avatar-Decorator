@@ -56,6 +56,14 @@ h1 {
   flex-wrap: wrap;
 }
 
+.inline-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
 .inline-row input[type="text"] {
   flex: 1 1 240px;
 }
@@ -132,6 +140,23 @@ input[type="number"] {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.color-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 46px;
+  gap: 8px;
+  align-items: center;
+}
+
+input[type="color"] {
+  width: 46px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #cdbb92;
+  background: #fffaf0;
+  padding: 2px;
+  cursor: pointer;
 }
 
 .image-slot {
@@ -368,16 +393,10 @@ button {
   opacity: 0.92;
 }
 
-.preview-line {
-  height: 6px;
-  background: #e8dcc1;
-  border-radius: 999px;
-  margin-bottom: 6px;
-}
-
-.preview-line.short {
-  width: 60%;
-  margin-bottom: 0;
+.preview-text {
+  font-size: 12px;
+  line-height: 1.4;
+  color: inherit;
 }
 
 @media (max-width: 820px) {
@@ -393,6 +412,7 @@ button {
 .toast {
   position: sticky;
   top: 12px;
+  z-index: 9999;
   margin: 0 0 12px 0;
   padding: 10px 12px;
   border-radius: 10px;

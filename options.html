@@ -26,10 +26,15 @@
         </div>
         <div class="field">
           <label>画像(最大5枚)</label>
+          <label class="inline-check">
+            <input id="globalAvatarCrop" type="checkbox" checked />
+            アバターを中央正方形にクロップ
+          </label>
           <div class="image-grid" id="globalImages"></div>
           <p class="hint sentiment-hint" id="globalSentimentHint">
             画像スロット1→5の順で、ネガティブ→ポジティブに配置してください。
           </p>
+          <p class="hint">アップロード時にWebP変換し、長辺を自動縮小します。</p>
         </div>
         <div class="field">
           <label>背景画像</label>
@@ -43,31 +48,56 @@
           <p class="hint">画面サイズに合わせて自動調整されます。</p>
         </div>
         <div class="field">
+          <label for="globalBgOverlay">背景画像の黒がけ(%)</label>
+          <input id="globalBgOverlay" type="number" min="0" max="100" step="1" placeholder="0-100" />
+          <p class="hint">0で黒がけなし、100で最も暗くなります。</p>
+        </div>
+        <div class="field">
+          <label for="globalNameColor">アバター名テキスト色</label>
+          <div class="color-input-row">
+            <input id="globalNameColor" type="text" placeholder="#ffffff / rgba(255,255,255,0.9)" />
+            <input id="globalNameColorPicker" type="color" value="#ffffff" />
+          </div>
+          <p class="hint">未入力なら既定色を使います。</p>
+        </div>
+        <div class="field">
           <label>チャット枠カラー</label>
           <div class="color-grid">
             <div class="color-field">
               <label for="globalAssistantBg">AI 背景色</label>
-              <input
-                id="globalAssistantBg"
-                type="text"
-                placeholder="#ffffff / rgba(0,0,0,0.8)"
-              />
+              <div class="color-input-row">
+                <input
+                  id="globalAssistantBg"
+                  type="text"
+                  placeholder="#ffffff / rgba(0,0,0,0.8)"
+                />
+                <input id="globalAssistantBgPicker" type="color" value="#ffffff" />
+              </div>
             </div>
             <div class="color-field">
               <label for="globalAssistantText">AI テキスト色</label>
-              <input
-                id="globalAssistantText"
-                type="text"
-                placeholder="#111111 / rgba(0,0,0,0.9)"
-              />
+              <div class="color-input-row">
+                <input
+                  id="globalAssistantText"
+                  type="text"
+                  placeholder="#111111 / rgba(0,0,0,0.9)"
+                />
+                <input id="globalAssistantTextPicker" type="color" value="#111111" />
+              </div>
             </div>
             <div class="color-field">
               <label for="globalUserBg">ユーザー背景色</label>
-              <input id="globalUserBg" type="text" placeholder="#f5f5f5 / rgba(0,0,0,0.06)" />
+              <div class="color-input-row">
+                <input id="globalUserBg" type="text" placeholder="#f5f5f5 / rgba(0,0,0,0.06)" />
+                <input id="globalUserBgPicker" type="color" value="#f5f5f5" />
+              </div>
             </div>
             <div class="color-field">
               <label for="globalUserText">ユーザーテキスト色</label>
-              <input id="globalUserText" type="text" placeholder="#111111 / rgba(0,0,0,0.9)" />
+              <div class="color-input-row">
+                <input id="globalUserText" type="text" placeholder="#111111 / rgba(0,0,0,0.9)" />
+                <input id="globalUserTextPicker" type="color" value="#111111" />
+              </div>
             </div>
           </div>
           <p class="hint">未入力ならChatGPTの既定色を使います。</p>
@@ -91,12 +121,10 @@
                 <div class="preview-name"></div>
               </div>
               <div class="preview-bubble assistant">
-                <div class="preview-line"></div>
-                <div class="preview-line short"></div>
+                <div class="preview-text">AIメッセージのテキスト</div>
               </div>
               <div class="preview-bubble user">
-                <div class="preview-line"></div>
-                <div class="preview-line short"></div>
+                <div class="preview-text">ユーザーメッセージのテキスト</div>
               </div>
             </div>
           </div>
@@ -137,10 +165,15 @@
         </div>
         <div class="field">
           <label>画像(最大5枚)</label>
+          <label class="inline-check">
+            <input id="projectAvatarCrop" type="checkbox" checked />
+            アバターを中央正方形にクロップ
+          </label>
           <div class="image-grid" id="projectImages"></div>
           <p class="hint sentiment-hint" id="projectSentimentHint">
             画像スロット1→5の順で、ネガティブ→ポジティブに配置してください。
           </p>
+          <p class="hint">アップロード時にWebP変換し、長辺を自動縮小します。</p>
         </div>
         <div class="field">
           <label>背景画像</label>
@@ -154,31 +187,67 @@
           <p class="hint">画面サイズに合わせて自動調整されます。</p>
         </div>
         <div class="field">
+          <label for="projectBgOverlay">背景画像の黒がけ(%)</label>
+          <input
+            id="projectBgOverlay"
+            type="number"
+            min="0"
+            max="100"
+            step="1"
+            placeholder="0-100"
+          />
+          <p class="hint">0で黒がけなし、100で最も暗くなります。</p>
+        </div>
+        <div class="field">
+          <label for="projectNameColor">アバター名テキスト色</label>
+          <div class="color-input-row">
+            <input
+              id="projectNameColor"
+              type="text"
+              placeholder="#ffffff / rgba(255,255,255,0.9)"
+            />
+            <input id="projectNameColorPicker" type="color" value="#ffffff" />
+          </div>
+          <p class="hint">未入力なら既定色を使います。</p>
+        </div>
+        <div class="field">
           <label>チャット枠カラー</label>
           <div class="color-grid">
             <div class="color-field">
               <label for="projectAssistantBg">AI 背景色</label>
-              <input
-                id="projectAssistantBg"
-                type="text"
-                placeholder="#ffffff / rgba(0,0,0,0.8)"
-              />
+              <div class="color-input-row">
+                <input
+                  id="projectAssistantBg"
+                  type="text"
+                  placeholder="#ffffff / rgba(0,0,0,0.8)"
+                />
+                <input id="projectAssistantBgPicker" type="color" value="#ffffff" />
+              </div>
             </div>
             <div class="color-field">
               <label for="projectAssistantText">AI テキスト色</label>
-              <input
-                id="projectAssistantText"
-                type="text"
-                placeholder="#111111 / rgba(0,0,0,0.9)"
-              />
+              <div class="color-input-row">
+                <input
+                  id="projectAssistantText"
+                  type="text"
+                  placeholder="#111111 / rgba(0,0,0,0.9)"
+                />
+                <input id="projectAssistantTextPicker" type="color" value="#111111" />
+              </div>
             </div>
             <div class="color-field">
               <label for="projectUserBg">ユーザー背景色</label>
-              <input id="projectUserBg" type="text" placeholder="#f5f5f5 / rgba(0,0,0,0.06)" />
+              <div class="color-input-row">
+                <input id="projectUserBg" type="text" placeholder="#f5f5f5 / rgba(0,0,0,0.06)" />
+                <input id="projectUserBgPicker" type="color" value="#f5f5f5" />
+              </div>
             </div>
             <div class="color-field">
               <label for="projectUserText">ユーザーテキスト色</label>
-              <input id="projectUserText" type="text" placeholder="#111111 / rgba(0,0,0,0.9)" />
+              <div class="color-input-row">
+                <input id="projectUserText" type="text" placeholder="#111111 / rgba(0,0,0,0.9)" />
+                <input id="projectUserTextPicker" type="color" value="#111111" />
+              </div>
             </div>
           </div>
           <p class="hint">未入力ならChatGPTの既定色を使います。</p>
@@ -202,12 +271,10 @@
                 <div class="preview-name"></div>
               </div>
               <div class="preview-bubble assistant">
-                <div class="preview-line"></div>
-                <div class="preview-line short"></div>
+                <div class="preview-text">AIメッセージのテキスト</div>
               </div>
               <div class="preview-bubble user">
-                <div class="preview-line"></div>
-                <div class="preview-line short"></div>
+                <div class="preview-text">ユーザーメッセージのテキスト</div>
               </div>
             </div>
           </div>

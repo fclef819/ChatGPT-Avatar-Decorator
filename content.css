@@ -1,13 +1,35 @@
 .cad-root {
   --cad-bg-image: none;
+  --cad-bg-overlay: 0;
   --cad-bg-size: cover;
   --cad-bg-position: center;
   --cad-bg-repeat: no-repeat;
   --cad-bg-attachment: fixed;
+  --cad-bubble-padding-y: 10px;
+  --cad-bubble-padding-x: 12px;
+  --cad-bubble-radius: 14px;
 }
 
-body.cad-bg {
-  background-image: var(--cad-bg-image) !important;
+html.cad-bg,
+body.cad-bg,
+body.cad-bg #__next,
+body.cad-bg #__next > div,
+body.cad-bg main,
+body.cad-bg [data-scroll-root],
+body.cad-bg div[class*="@container/main"] {
+  background-color: transparent !important;
+}
+
+html.cad-bg,
+body.cad-bg,
+body.cad-bg > div:nth-of-type(2) > div:first-child > div > div:nth-child(2),
+body.cad-bg div[class*="@container/main"] {
+  background-image:
+    linear-gradient(
+      rgba(0, 0, 0, var(--cad-bg-overlay)),
+      rgba(0, 0, 0, var(--cad-bg-overlay))
+    ),
+    var(--cad-bg-image) !important;
   background-size: var(--cad-bg-size) !important;
   background-position: var(--cad-bg-position) !important;
   background-repeat: var(--cad-bg-repeat) !important;
@@ -48,16 +70,18 @@ body.cad-bg {
   margin-right: 4px;
 }
 
-.cad-message-assistant,
-.cad-message-assistant > div {
+.cad-message-assistant > :not(.cad-header) {
   background-color: var(--cad-assistant-bg) !important;
   color: var(--cad-assistant-text) !important;
+  padding: var(--cad-bubble-padding-y) var(--cad-bubble-padding-x) !important;
+  border-radius: var(--cad-bubble-radius) !important;
 }
 
-.cad-message-user,
-.cad-message-user > div {
+.cad-message-user > :not(.cad-header) {
   background-color: var(--cad-user-bg) !important;
   color: var(--cad-user-text) !important;
+  padding: var(--cad-bubble-padding-y) var(--cad-bubble-padding-x) !important;
+  border-radius: var(--cad-bubble-radius) !important;
 }
 
 .cad-message-assistant *,
@@ -65,8 +89,54 @@ body.cad-bg {
   color: inherit !important;
 }
 
+.cad-glass-panel {
+  background-color: rgba(18, 28, 40, 0.34) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22) !important;
+  backdrop-filter: blur(14px) saturate(135%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(135%) !important;
+}
+
+body.cad-bg #page-header.cad-glass-panel {
+  background-color: rgba(18, 28, 40, 0.26) !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2) !important;
+}
+
+body.cad-bg [data-scroll-root].cad-glass-panel {
+  border-radius: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: clip !important;
+  scrollbar-gutter: auto !important;
+}
+
+body.cad-bg .cad-project-header-clear,
+body.cad-bg .cad-project-header-clear.bg-token-main-surface-primary {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+body.cad-bg .cad-list-dark {
+  background-color: rgba(8, 12, 18, 0.42) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 12px !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body.cad-bg .cad-list-dark [class*="bg-token-main-surface"],
+body.cad-bg .cad-list-dark [class*="main-surface-primary"],
+body.cad-bg .cad-list-dark [class*="main-surface-secondary"],
+body.cad-bg .cad-list-dark [style*="main-surface-primary"],
+body.cad-bg .cad-list-dark [style*="main-surface-secondary"] {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
 @media (max-width: 768px) {
-  body.cad-bg {
+  body.cad-bg,
+  body.cad-bg > div:nth-of-type(2) > div:first-child > div > div:nth-child(2),
+  body.cad-bg div[class*="@container/main"] {
     background-attachment: scroll !important;
   }
 }
