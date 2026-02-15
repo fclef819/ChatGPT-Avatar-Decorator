@@ -89,6 +89,25 @@ body.cad-bg div[class*="@container/main"] {
   color: inherit !important;
 }
 
+.cad-message-assistant pre,
+.cad-message-assistant pre *,
+.cad-message-assistant code,
+.cad-message-assistant code *,
+.cad-message-assistant kbd,
+.cad-message-assistant kbd *,
+.cad-message-assistant samp,
+.cad-message-assistant samp *,
+.cad-message-user pre,
+.cad-message-user pre *,
+.cad-message-user code,
+.cad-message-user code *,
+.cad-message-user kbd,
+.cad-message-user kbd *,
+.cad-message-user samp,
+.cad-message-user samp * {
+  color: revert !important;
+}
+
 .cad-glass-panel {
   background-color: rgba(18, 28, 40, 0.34) !important;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;

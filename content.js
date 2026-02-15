@@ -5,6 +5,10 @@
   let lastGlassTargets = [];
   let lastProjectHeaderTargets = [];
   let lastListDarkTargets = [];
+  let lastThemeSignature = "";
+  let scanScheduled = false;
+  let themeDirty = true;
+  const rgbaCache = new Map();
 
   const defaultSettings = {
     global: {
@@ -195,6 +199,19 @@
   }
 
   function applyTheme(profile) {
+    const signature = getThemeSignature(profile);
+    const bgTargets = getBackgroundTargets();
+    const glassTargets = getGlassTargets();
+    const projectHeaderTargets = getProjectHeaderTargets();
+    const listDarkTargets = getListDarkTargets();
+    const sameTheme = signature === lastThemeSignature;
+    const sameTargets =
+      sameNodeList(bgTargets, lastBackgroundTargets) &&
+      sameNodeList(glassTargets, lastGlassTargets) &&
+      sameNodeList(projectHeaderTargets, lastProjectHeaderTargets) &&
+      sameNodeList(listDarkTargets, lastListDarkTargets);
+    if (!themeDirty && sameTheme && sameTargets) return;
+
     const root = document.documentElement;
     root.classList.add("cad-root");
 
@@ -203,10 +220,6 @@
     clearGlassStyles(lastGlassTargets);
     clearProjectHeaderStyles(lastProjectHeaderTargets);
     clearListDarkStyles(lastListDarkTargets);
-    const bgTargets = getBackgroundTargets();
-    const glassTargets = getGlassTargets();
-    const projectHeaderTargets = getProjectHeaderTargets();
-    const listDarkTargets = getListDarkTargets();
     lastBackgroundTargets = bgTargets;
     lastGlassTargets = glassTargets;
     lastProjectHeaderTargets = projectHeaderTargets;
@@ -234,6 +247,8 @@
     setCssVar(root, "--cad-assistant-text", profile.assistantText);
     setCssVar(root, "--cad-user-bg", colorWithOpacity(profile.userBg, profile.userBgOpacity));
     setCssVar(root, "--cad-user-text", profile.userText);
+    lastThemeSignature = signature;
+    themeDirty = false;
   }
 
   function getBackgroundTargets() {
@@ -370,6 +385,8 @@
   function colorWithOpacity(color, opacityPercent) {
     const v = (color || "").trim();
     if (!v) return "";
+    const key = `${v}|${clampOpacity(opacityPercent)}`;
+    if (rgbaCache.has(key)) return rgbaCache.get(key);
     const probe = document.createElement("span");
     probe.style.color = "";
     probe.style.color = v;
@@ -384,7 +401,30 @@
     const b = Number(m[3]);
     const baseA = m[4] !== undefined ? Number(m[4]) : 1;
     const a = Math.max(0, Math.min(1, baseA * (clampOpacity(opacityPercent) / 100)));
-    return `rgba(${r}, ${g}, ${b}, ${a})`;
+    const out = `rgba(${r}, ${g}, ${b}, ${a})`;
+    rgbaCache.set(key, out);
+    return out;
+  }
+
+  function getThemeSignature(profile) {
+    return [
+      profile.bgImage || "",
+      clampBgOverlay(profile.bgOverlay),
+      profile.assistantBg || "",
+      clampOpacity(profile.assistantBgOpacity),
+      profile.assistantText || "",
+      profile.userBg || "",
+      clampOpacity(profile.userBgOpacity),
+      profile.userText || ""
+    ].join("|");
+  }
+
+  function sameNodeList(a, b) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i += 1) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
   }
 
   function applyMessageTheme(messageEl, role, profile) {
@@ -436,8 +476,18 @@
   }
 
   const observer = new MutationObserver(() => {
-    scanAndDecorate();
+    scheduleScan();
   });
+
+  function scheduleScan(forceTheme = false) {
+    if (forceTheme) themeDirty = true;
+    if (scanScheduled) return;
+    scanScheduled = true;
+    requestAnimationFrame(() => {
+      scanScheduled = false;
+      scanAndDecorate();
+    });
+  }
 
   let lastPath = window.location.pathname;
   let lastProjectId = getProjectIdFromUrl();
@@ -449,13 +499,14 @@
     lastPath = path;
     lastProjectId = projectId;
     resetDecorations();
-    scanAndDecorate();
+    scheduleScan(true);
   }
 
   function start() {
-    scanAndDecorate();
+    scheduleScan(true);
     observer.observe(document.body, { childList: true, subtree: true });
     setInterval(handleLocationChange, 800);
+    window.addEventListener("resize", () => scheduleScan(true));
   }
 
   chrome.runtime.onMessage.addListener((message) => {
@@ -464,7 +515,8 @@
         el.dataset.cadDecorated = "0";
       });
       messageImageCache = new WeakMap();
-      scanAndDecorate();
+      rgbaCache.clear();
+      scheduleScan(true);
     }
   });
 
