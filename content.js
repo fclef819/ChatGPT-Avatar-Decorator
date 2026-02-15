@@ -450,6 +450,7 @@
     getSettings((settings) => {
       const profile = getActiveProfile(settings);
       applyTheme(profile);
+      applyAskTooltipLabel(profile);
       const nodes = document.querySelectorAll('div[data-message-author-role="assistant"]');
       nodes.forEach((el) => {
         applyMessageTheme(el, "assistant", profile);
@@ -458,6 +459,46 @@
       const userNodes = document.querySelectorAll('div[data-message-author-role="user"]');
       userNodes.forEach((el) => applyMessageTheme(el, "user", profile));
     });
+  }
+
+  function applyAskTooltipLabel(profile) {
+    const name = (profile?.name || "").trim() || "ChatGPT";
+    const askPattern = /ChatGPT[ \u00A0\u3000]*(?=に質問する)/g;
+    const replaceAskLabel = (text) => {
+      if (!text) return text;
+      return text.replace(askPattern, name);
+    };
+
+    const attrTargets = document.querySelectorAll('[aria-label*="に質問する"], [title*="に質問する"]');
+    attrTargets.forEach((el) => {
+      const aria = el.getAttribute("aria-label");
+      if (aria?.includes("に質問する")) {
+        if (!el.dataset.cadAskBaseAriaLabel) {
+          el.dataset.cadAskBaseAriaLabel = aria;
+        }
+        const next = replaceAskLabel(el.dataset.cadAskBaseAriaLabel);
+        if (next !== aria) el.setAttribute("aria-label", next);
+      }
+      const title = el.getAttribute("title");
+      if (title?.includes("に質問する")) {
+        if (!el.dataset.cadAskBaseTitle) {
+          el.dataset.cadAskBaseTitle = title;
+        }
+        const next = replaceAskLabel(el.dataset.cadAskBaseTitle);
+        if (next !== title) el.setAttribute("title", next);
+      }
+    });
+
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    let node = walker.nextNode();
+    while (node) {
+      const text = node.nodeValue || "";
+      if (text.includes("に質問する") && text.includes("ChatGPT")) {
+        const next = replaceAskLabel(text);
+        if (next !== text) node.nodeValue = next;
+      }
+      node = walker.nextNode();
+    }
   }
 
   function resetDecorations() {
