@@ -28,7 +28,7 @@
           <label>画像(最大5枚)</label>
           <label class="inline-check">
             <input id="globalAvatarCrop" type="checkbox" checked />
-            アバターを中央正方形にクロップ
+            手動トリミング（正方形固定・円ガイド）
           </label>
           <div class="image-grid" id="globalImages"></div>
           <p class="hint sentiment-hint" id="globalSentimentHint">
@@ -75,6 +75,10 @@
               </div>
             </div>
             <div class="color-field">
+              <label for="globalAssistantBgOpacity">AI 背景透過度(%)</label>
+              <input id="globalAssistantBgOpacity" type="number" min="0" max="100" step="1" />
+            </div>
+            <div class="color-field">
               <label for="globalAssistantText">AI テキスト色</label>
               <div class="color-input-row">
                 <input
@@ -91,6 +95,10 @@
                 <input id="globalUserBg" type="text" placeholder="#f5f5f5 / rgba(0,0,0,0.06)" />
                 <input id="globalUserBgPicker" type="color" value="#f5f5f5" />
               </div>
+            </div>
+            <div class="color-field">
+              <label for="globalUserBgOpacity">ユーザー背景透過度(%)</label>
+              <input id="globalUserBgOpacity" type="number" min="0" max="100" step="1" />
             </div>
             <div class="color-field">
               <label for="globalUserText">ユーザーテキスト色</label>
@@ -167,7 +175,7 @@
           <label>画像(最大5枚)</label>
           <label class="inline-check">
             <input id="projectAvatarCrop" type="checkbox" checked />
-            アバターを中央正方形にクロップ
+            手動トリミング（正方形固定・円ガイド）
           </label>
           <div class="image-grid" id="projectImages"></div>
           <p class="hint sentiment-hint" id="projectSentimentHint">
@@ -225,6 +233,10 @@
               </div>
             </div>
             <div class="color-field">
+              <label for="projectAssistantBgOpacity">AI 背景透過度(%)</label>
+              <input id="projectAssistantBgOpacity" type="number" min="0" max="100" step="1" />
+            </div>
+            <div class="color-field">
               <label for="projectAssistantText">AI テキスト色</label>
               <div class="color-input-row">
                 <input
@@ -241,6 +253,10 @@
                 <input id="projectUserBg" type="text" placeholder="#f5f5f5 / rgba(0,0,0,0.06)" />
                 <input id="projectUserBgPicker" type="color" value="#f5f5f5" />
               </div>
+            </div>
+            <div class="color-field">
+              <label for="projectUserBgOpacity">ユーザー背景透過度(%)</label>
+              <input id="projectUserBgOpacity" type="number" min="0" max="100" step="1" />
             </div>
             <div class="color-field">
               <label for="projectUserText">ユーザーテキスト色</label>
@@ -300,6 +316,22 @@
         <p class="hint">JSONファイルでエクスポート/インポートできます。</p>
       </section>
     </main>
+
+    <div id="avatarCropModal" class="crop-modal" aria-hidden="true">
+      <div class="crop-dialog" role="dialog" aria-modal="true" aria-label="アバタートリミング">
+        <h3>アバターをトリミング</h3>
+        <p class="hint">画像をドラッグして位置調整、スライダーで拡大縮小できます。</p>
+        <canvas id="avatarCropCanvas" class="crop-canvas" width="420" height="420"></canvas>
+        <div class="field">
+          <label for="avatarCropZoom">拡大率</label>
+          <input id="avatarCropZoom" type="range" min="1" max="3" step="0.01" value="1" />
+        </div>
+        <div class="actions">
+          <button id="avatarCropApply" type="button">適用</button>
+          <button id="avatarCropCancel" type="button">キャンセル</button>
+        </div>
+      </div>
+    </div>
 
     <script src="options.js"></script>
   </body>

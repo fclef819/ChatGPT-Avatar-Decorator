@@ -17,8 +17,10 @@
       bgImage: "",
       bgOverlay: 0,
       assistantBg: "",
+      assistantBgOpacity: 100,
       assistantText: "",
       userBg: "",
+      userBgOpacity: 100,
       userText: ""
     },
     projects: {}
@@ -71,8 +73,10 @@
         bgImage: value?.bgImage || "",
         bgOverlay: clampBgOverlay(value?.bgOverlay),
         assistantBg: value?.assistantBg || "",
+        assistantBgOpacity: clampOpacity(value?.assistantBgOpacity),
         assistantText: value?.assistantText || "",
         userBg: value?.userBg || "",
+        userBgOpacity: clampOpacity(value?.userBgOpacity),
         userText: value?.userText || ""
       };
     }
@@ -87,8 +91,10 @@
         bgImage: settings.global?.bgImage || "",
         bgOverlay: clampBgOverlay(settings.global?.bgOverlay),
         assistantBg: settings.global?.assistantBg || "",
+        assistantBgOpacity: clampOpacity(settings.global?.assistantBgOpacity),
         assistantText: settings.global?.assistantText || "",
         userBg: settings.global?.userBg || "",
+        userBgOpacity: clampOpacity(settings.global?.userBgOpacity),
         userText: settings.global?.userText || ""
       },
       projects: normalizedProjects
@@ -220,9 +226,13 @@
     }
     root.style.setProperty("--cad-bg-overlay", String(clampBgOverlay(profile.bgOverlay) / 100));
 
-    setCssVar(root, "--cad-assistant-bg", profile.assistantBg);
+    setCssVar(
+      root,
+      "--cad-assistant-bg",
+      colorWithOpacity(profile.assistantBg, profile.assistantBgOpacity)
+    );
     setCssVar(root, "--cad-assistant-text", profile.assistantText);
-    setCssVar(root, "--cad-user-bg", profile.userBg);
+    setCssVar(root, "--cad-user-bg", colorWithOpacity(profile.userBg, profile.userBgOpacity));
     setCssVar(root, "--cad-user-text", profile.userText);
   }
 
@@ -349,6 +359,32 @@
     const n = Number(value);
     if (!Number.isFinite(n)) return 0;
     return Math.max(0, Math.min(100, n));
+  }
+
+  function clampOpacity(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return 100;
+    return Math.max(0, Math.min(100, n));
+  }
+
+  function colorWithOpacity(color, opacityPercent) {
+    const v = (color || "").trim();
+    if (!v) return "";
+    const probe = document.createElement("span");
+    probe.style.color = "";
+    probe.style.color = v;
+    if (!probe.style.color) return v;
+    document.body.appendChild(probe);
+    const rgba = getComputedStyle(probe).color;
+    probe.remove();
+    const m = rgba.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/i);
+    if (!m) return v;
+    const r = Number(m[1]);
+    const g = Number(m[2]);
+    const b = Number(m[3]);
+    const baseA = m[4] !== undefined ? Number(m[4]) : 1;
+    const a = Math.max(0, Math.min(1, baseA * (clampOpacity(opacityPercent) / 100)));
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
   }
 
   function applyMessageTheme(messageEl, role, profile) {

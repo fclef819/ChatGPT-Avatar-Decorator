@@ -428,3 +428,49 @@ button {
   opacity: 1;
   transform: translateY(0);
 }
+
+.crop-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.42);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 16px;
+}
+
+.crop-modal.show {
+  display: flex;
+}
+
+.crop-dialog {
+  width: min(520px, 100%);
+  background: #fffdf7;
+  border: 1px solid #e4d8b8;
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+  padding: 16px;
+}
+
+.crop-dialog h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+}
+
+.crop-canvas {
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 1 / 1;
+  display: block;
+  border-radius: 10px;
+  border: 1px solid #cdbb92;
+  background: #f5ecd8;
+  margin: 10px auto 12px auto;
+  touch-action: none;
+  cursor: grab;
+}
+
+.crop-canvas.is-dragging {
+  cursor: grabbing;
+}

@@ -26,10 +26,12 @@
   const elGlobalNameColor = document.getElementById("globalNameColor");
   const elGlobalNameColorPicker = document.getElementById("globalNameColorPicker");
   const elGlobalAssistantBg = document.getElementById("globalAssistantBg");
+  const elGlobalAssistantBgOpacity = document.getElementById("globalAssistantBgOpacity");
   const elGlobalAssistantBgPicker = document.getElementById("globalAssistantBgPicker");
   const elGlobalAssistantText = document.getElementById("globalAssistantText");
   const elGlobalAssistantTextPicker = document.getElementById("globalAssistantTextPicker");
   const elGlobalUserBg = document.getElementById("globalUserBg");
+  const elGlobalUserBgOpacity = document.getElementById("globalUserBgOpacity");
   const elGlobalUserBgPicker = document.getElementById("globalUserBgPicker");
   const elGlobalUserText = document.getElementById("globalUserText");
   const elGlobalUserTextPicker = document.getElementById("globalUserTextPicker");
@@ -55,10 +57,12 @@
   const elProjectNameColor = document.getElementById("projectNameColor");
   const elProjectNameColorPicker = document.getElementById("projectNameColorPicker");
   const elProjectAssistantBg = document.getElementById("projectAssistantBg");
+  const elProjectAssistantBgOpacity = document.getElementById("projectAssistantBgOpacity");
   const elProjectAssistantBgPicker = document.getElementById("projectAssistantBgPicker");
   const elProjectAssistantText = document.getElementById("projectAssistantText");
   const elProjectAssistantTextPicker = document.getElementById("projectAssistantTextPicker");
   const elProjectUserBg = document.getElementById("projectUserBg");
+  const elProjectUserBgOpacity = document.getElementById("projectUserBgOpacity");
   const elProjectUserBgPicker = document.getElementById("projectUserBgPicker");
   const elProjectUserText = document.getElementById("projectUserText");
   const elProjectUserTextPicker = document.getElementById("projectUserTextPicker");
@@ -66,6 +70,11 @@
   const elImportSettings = document.getElementById("importSettings");
   const elImportLabel = document.getElementById("importLabel");
   const elImportLabelText = document.getElementById("importLabelText");
+  const elAvatarCropModal = document.getElementById("avatarCropModal");
+  const elAvatarCropCanvas = document.getElementById("avatarCropCanvas");
+  const elAvatarCropZoom = document.getElementById("avatarCropZoom");
+  const elAvatarCropApply = document.getElementById("avatarCropApply");
+  const elAvatarCropCancel = document.getElementById("avatarCropCancel");
   const elToast = document.getElementById("toast");
 
   let settingsCache = null;
@@ -75,6 +84,7 @@
   let projectBgImage = "";
   let isImporting = false;
   let dbPromise = null;
+  let activeCropSession = null;
 
   function buildImageSlots(container, images, onChange, transform) {
     container.innerHTML = "";
@@ -96,7 +106,17 @@
       input.addEventListener("change", async () => {
         const file = input.files?.[0];
         if (!file) return;
-        const dataUrl = transform ? await transform(file, i) : await readAsDataUrl(file);
+        let dataUrl = "";
+        try {
+          dataUrl = transform ? await transform(file, i) : await readAsDataUrl(file);
+        } catch {
+          input.value = "";
+          return;
+        }
+        if (!dataUrl) {
+          input.value = "";
+          return;
+        }
         images[i] = dataUrl;
         const img = createImagePreview(dataUrl);
         preview.replaceWith(img);
@@ -157,8 +177,10 @@
         bgImage: "",
         bgOverlay: 0,
         assistantBg: "",
+        assistantBgOpacity: 100,
         assistantText: "",
         userBg: "",
+        userBgOpacity: 100,
         userText: ""
       },
       projects: {}
@@ -184,8 +206,10 @@
         bgImage: value?.bgImage || "",
         bgOverlay: clampBgOverlay(value?.bgOverlay),
         assistantBg: value?.assistantBg || "",
+        assistantBgOpacity: clampOpacity(value?.assistantBgOpacity),
         assistantText: value?.assistantText || "",
         userBg: value?.userBg || "",
+        userBgOpacity: clampOpacity(value?.userBgOpacity),
         userText: value?.userText || ""
       };
     }
@@ -203,8 +227,10 @@
         bgImage: settings?.global?.bgImage || "",
         bgOverlay: clampBgOverlay(settings?.global?.bgOverlay),
         assistantBg: settings?.global?.assistantBg || "",
+        assistantBgOpacity: clampOpacity(settings?.global?.assistantBgOpacity),
         assistantText: settings?.global?.assistantText || "",
         userBg: settings?.global?.userBg || "",
+        userBgOpacity: clampOpacity(settings?.global?.userBgOpacity),
         userText: settings?.global?.userText || ""
       },
       projects: normalizedProjects
@@ -225,8 +251,10 @@
       elGlobalNameColor.value = merged.global.nameColor || "";
       elGlobalBgOverlay.value = clampBgOverlay(merged.global.bgOverlay);
       elGlobalAssistantBg.value = merged.global.assistantBg || "";
+      elGlobalAssistantBgOpacity.value = clampOpacity(merged.global.assistantBgOpacity);
       elGlobalAssistantText.value = merged.global.assistantText || "";
       elGlobalUserBg.value = merged.global.userBg || "";
+      elGlobalUserBgOpacity.value = clampOpacity(merged.global.userBgOpacity);
       elGlobalUserText.value = merged.global.userText || "";
       syncAllColorPickers();
       syncSentimentHint(elGlobalMode.value, elGlobalSentimentHint);
@@ -389,8 +417,10 @@
       elGlobalNameColor.value = settingsCache.global.nameColor || "";
       elGlobalBgOverlay.value = clampBgOverlay(settingsCache.global.bgOverlay);
       elGlobalAssistantBg.value = settingsCache.global.assistantBg || "";
+      elGlobalAssistantBgOpacity.value = clampOpacity(settingsCache.global.assistantBgOpacity);
       elGlobalAssistantText.value = settingsCache.global.assistantText || "";
       elGlobalUserBg.value = settingsCache.global.userBg || "";
+      elGlobalUserBgOpacity.value = clampOpacity(settingsCache.global.userBgOpacity);
       elGlobalUserText.value = settingsCache.global.userText || "";
       syncAllColorPickers();
       syncSentimentHint(elGlobalMode.value, elGlobalSentimentHint);
@@ -431,8 +461,10 @@
     settingsCache.global.bgImage = globalBgImage || "";
     settingsCache.global.bgOverlay = clampBgOverlay(elGlobalBgOverlay.value);
     settingsCache.global.assistantBg = elGlobalAssistantBg.value.trim();
+    settingsCache.global.assistantBgOpacity = clampOpacity(elGlobalAssistantBgOpacity.value);
     settingsCache.global.assistantText = elGlobalAssistantText.value.trim();
     settingsCache.global.userBg = elGlobalUserBg.value.trim();
+    settingsCache.global.userBgOpacity = clampOpacity(elGlobalUserBgOpacity.value);
     settingsCache.global.userText = elGlobalUserText.value.trim();
     const ok = await saveSettings();
     if (ok) showToast("全体設定を保存しました");
@@ -456,8 +488,10 @@
       bgImage: projectBgImage || "",
       bgOverlay: clampBgOverlay(elProjectBgOverlay.value),
       assistantBg: elProjectAssistantBg.value.trim(),
+      assistantBgOpacity: clampOpacity(elProjectAssistantBgOpacity.value),
       assistantText: elProjectAssistantText.value.trim(),
       userBg: elProjectUserBg.value.trim(),
+      userBgOpacity: clampOpacity(elProjectUserBgOpacity.value),
       userText: elProjectUserText.value.trim()
     };
     const ok = await saveSettings();
@@ -476,8 +510,10 @@
     elProjectNameColor.value = "";
     elProjectBgOverlay.value = 0;
     elProjectAssistantBg.value = "";
+    elProjectAssistantBgOpacity.value = 100;
     elProjectAssistantText.value = "";
     elProjectUserBg.value = "";
+    elProjectUserBgOpacity.value = 100;
     elProjectUserText.value = "";
     syncAllColorPickers();
     syncSentimentHint(elProjectMode.value, elProjectSentimentHint);
@@ -525,8 +561,10 @@
         elProjectNameColor.value = profile.nameColor || "";
         elProjectBgOverlay.value = clampBgOverlay(profile.bgOverlay);
         elProjectAssistantBg.value = profile.assistantBg || "";
+        elProjectAssistantBgOpacity.value = clampOpacity(profile.assistantBgOpacity);
         elProjectAssistantText.value = profile.assistantText || "";
         elProjectUserBg.value = profile.userBg || "";
+        elProjectUserBgOpacity.value = clampOpacity(profile.userBgOpacity);
         elProjectUserText.value = profile.userText || "";
         syncAllColorPickers();
         syncSentimentHint(elProjectMode.value, elProjectSentimentHint);
@@ -594,10 +632,14 @@
   elGlobalAvatarSize.addEventListener("input", updateGlobalPreview);
   elGlobalNameSize.addEventListener("input", updateGlobalPreview);
   elGlobalBgOverlay.addEventListener("input", updateGlobalPreview);
+  elGlobalAssistantBgOpacity.addEventListener("input", updateGlobalPreview);
+  elGlobalUserBgOpacity.addEventListener("input", updateGlobalPreview);
   elProjectName.addEventListener("input", updateProjectPreview);
   elProjectAvatarSize.addEventListener("input", updateProjectPreview);
   elProjectNameSize.addEventListener("input", updateProjectPreview);
   elProjectBgOverlay.addEventListener("input", updateProjectPreview);
+  elProjectAssistantBgOpacity.addEventListener("input", updateProjectPreview);
+  elProjectUserBgOpacity.addEventListener("input", updateProjectPreview);
   elExtractProjectId.addEventListener("click", () => {
     const raw = elProjectUrl.value.trim();
     const id = normalizeProjectId(raw);
@@ -674,14 +716,25 @@
     return clampNumber(value, 0, 100, 0);
   }
 
+  function clampOpacity(value) {
+    return clampNumber(value, 0, 100, 100);
+  }
+
   async function processAvatarUpload(file, cropSquare) {
     try {
+      if (cropSquare) {
+        return await openAvatarCropDialog(file, {
+          outputSize: MAX_AVATAR_LONG_EDGE,
+          quality: AVATAR_WEBP_QUALITY
+        });
+      }
       return await convertFileToWebP(file, {
         maxLongEdge: MAX_AVATAR_LONG_EDGE,
         quality: AVATAR_WEBP_QUALITY,
-        cropSquare
+        cropSquare: false
       });
-    } catch {
+    } catch (err) {
+      if (String(err?.message || "").includes("crop canceled")) return "";
       return readAsDataUrl(file);
     }
   }
@@ -733,6 +786,206 @@
       }, "image/webp", quality);
     });
     return await readAsDataUrl(blob);
+  }
+
+  async function openAvatarCropDialog(file, opts) {
+    if (!elAvatarCropModal || !elAvatarCropCanvas || !elAvatarCropZoom) {
+      return await convertFileToWebP(file, {
+        maxLongEdge: MAX_AVATAR_LONG_EDGE,
+        quality: AVATAR_WEBP_QUALITY,
+        cropSquare: true
+      });
+    }
+    if (activeCropSession) throw new Error("crop session is already active");
+    const bitmap = await createImageBitmap(file);
+    const displaySize = 420;
+    const dpr = window.devicePixelRatio || 1;
+    elAvatarCropCanvas.width = Math.round(displaySize * dpr);
+    elAvatarCropCanvas.height = Math.round(displaySize * dpr);
+    const ctx = elAvatarCropCanvas.getContext("2d");
+    if (!ctx) {
+      if (typeof bitmap.close === "function") bitmap.close();
+      throw new Error("crop canvas context unavailable");
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const fit = Math.max(displaySize / bitmap.width, displaySize / bitmap.height);
+    const state = {
+      bitmap,
+      ctx,
+      displaySize,
+      fit,
+      zoom: 1,
+      x: 0,
+      y: 0,
+      dragging: false,
+      pointerId: null,
+      lastX: 0,
+      lastY: 0,
+      outputSize: opts.outputSize,
+      quality: opts.quality
+    };
+
+    state.x = (displaySize - bitmap.width * fit) / 2;
+    state.y = (displaySize - bitmap.height * fit) / 2;
+    clampCropOffset(state);
+    drawCrop(state);
+
+    const onZoom = () => {
+      const prevScale = state.fit * state.zoom;
+      state.zoom = clampNumber(elAvatarCropZoom.value, 1, 3, 1);
+      const nextScale = state.fit * state.zoom;
+      const cx = displaySize / 2;
+      const cy = displaySize / 2;
+      state.x = cx - ((cx - state.x) * nextScale) / prevScale;
+      state.y = cy - ((cy - state.y) * nextScale) / prevScale;
+      clampCropOffset(state);
+      drawCrop(state);
+    };
+
+    const onPointerDown = (e) => {
+      state.dragging = true;
+      state.pointerId = e.pointerId;
+      state.lastX = e.clientX;
+      state.lastY = e.clientY;
+      elAvatarCropCanvas.classList.add("is-dragging");
+      elAvatarCropCanvas.setPointerCapture(e.pointerId);
+    };
+
+    const onPointerMove = (e) => {
+      if (!state.dragging || e.pointerId !== state.pointerId) return;
+      const dx = e.clientX - state.lastX;
+      const dy = e.clientY - state.lastY;
+      state.lastX = e.clientX;
+      state.lastY = e.clientY;
+      state.x += dx;
+      state.y += dy;
+      clampCropOffset(state);
+      drawCrop(state);
+    };
+
+    const onPointerUp = (e) => {
+      if (e.pointerId !== state.pointerId) return;
+      state.dragging = false;
+      state.pointerId = null;
+      elAvatarCropCanvas.classList.remove("is-dragging");
+      try {
+        elAvatarCropCanvas.releasePointerCapture(e.pointerId);
+      } catch {
+        // no-op
+      }
+    };
+
+    elAvatarCropZoom.value = "1";
+    elAvatarCropModal.classList.add("show");
+    elAvatarCropModal.setAttribute("aria-hidden", "false");
+    elAvatarCropZoom.addEventListener("input", onZoom);
+    elAvatarCropCanvas.addEventListener("pointerdown", onPointerDown);
+    elAvatarCropCanvas.addEventListener("pointermove", onPointerMove);
+    elAvatarCropCanvas.addEventListener("pointerup", onPointerUp);
+    elAvatarCropCanvas.addEventListener("pointercancel", onPointerUp);
+
+    const close = () => {
+      elAvatarCropModal.classList.remove("show");
+      elAvatarCropModal.setAttribute("aria-hidden", "true");
+      elAvatarCropZoom.removeEventListener("input", onZoom);
+      elAvatarCropCanvas.removeEventListener("pointerdown", onPointerDown);
+      elAvatarCropCanvas.removeEventListener("pointermove", onPointerMove);
+      elAvatarCropCanvas.removeEventListener("pointerup", onPointerUp);
+      elAvatarCropCanvas.removeEventListener("pointercancel", onPointerUp);
+      elAvatarCropCanvas.classList.remove("is-dragging");
+      if (typeof bitmap.close === "function") bitmap.close();
+      activeCropSession = null;
+    };
+
+    return await new Promise((resolve, reject) => {
+      const onApply = async () => {
+        try {
+          const out = document.createElement("canvas");
+          out.width = state.outputSize;
+          out.height = state.outputSize;
+          const outCtx = out.getContext("2d");
+          if (!outCtx) throw new Error("output canvas context unavailable");
+          const scale = state.fit * state.zoom;
+          const sx = -state.x / scale;
+          const sy = -state.y / scale;
+          const sw = state.displaySize / scale;
+          const sh = state.displaySize / scale;
+          outCtx.drawImage(state.bitmap, sx, sy, sw, sh, 0, 0, state.outputSize, state.outputSize);
+          const blob = await new Promise((resolveBlob, rejectBlob) => {
+            out.toBlob(
+              (b) => {
+                if (b) resolveBlob(b);
+                else rejectBlob(new Error("crop toBlob failed"));
+              },
+              "image/webp",
+              state.quality
+            );
+          });
+          const dataUrl = await readAsDataUrl(blob);
+          cleanupHandlers();
+          close();
+          resolve(dataUrl);
+        } catch (err) {
+          cleanupHandlers();
+          close();
+          reject(err);
+        }
+      };
+
+      const onCancel = () => {
+        cleanupHandlers();
+        close();
+        reject(new Error("crop canceled"));
+      };
+
+      const cleanupHandlers = () => {
+        elAvatarCropApply.removeEventListener("click", onApply);
+        elAvatarCropCancel.removeEventListener("click", onCancel);
+      };
+
+      elAvatarCropApply.addEventListener("click", onApply);
+      elAvatarCropCancel.addEventListener("click", onCancel);
+      activeCropSession = { close, cleanupHandlers };
+    });
+  }
+
+  function clampCropOffset(state) {
+    const scale = state.fit * state.zoom;
+    const w = state.bitmap.width * scale;
+    const h = state.bitmap.height * scale;
+    const minX = state.displaySize - w;
+    const minY = state.displaySize - h;
+    state.x = Math.min(0, Math.max(minX, state.x));
+    state.y = Math.min(0, Math.max(minY, state.y));
+  }
+
+  function drawCrop(state) {
+    const ctx = state.ctx;
+    const size = state.displaySize;
+    ctx.clearRect(0, 0, size, size);
+    ctx.fillStyle = "#e8dcc1";
+    ctx.fillRect(0, 0, size, size);
+
+    const scale = state.fit * state.zoom;
+    const drawW = state.bitmap.width * scale;
+    const drawH = state.bitmap.height * scale;
+    ctx.drawImage(state.bitmap, state.x, state.y, drawW, drawH);
+
+    ctx.save();
+    ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
+    ctx.beginPath();
+    ctx.rect(0, 0, size, size);
+    ctx.arc(size / 2, size / 2, size / 2 - 12, 0, Math.PI * 2, true);
+    ctx.fill("evenodd");
+    ctx.restore();
+
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.92)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, size - 2, size - 2);
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2 - 12, 0, Math.PI * 2);
+    ctx.stroke();
   }
 
   function bindColorPair(textEl, pickerEl, onChange, fallbackHex) {
@@ -802,8 +1055,10 @@
       bgImage: globalBgImage,
       bgOverlay: clampBgOverlay(elGlobalBgOverlay.value),
       assistantBg: elGlobalAssistantBg.value.trim(),
+      assistantBgOpacity: clampOpacity(elGlobalAssistantBgOpacity.value),
       assistantText: elGlobalAssistantText.value.trim(),
       userBg: elGlobalUserBg.value.trim(),
+      userBgOpacity: clampOpacity(elGlobalUserBgOpacity.value),
       userText: elGlobalUserText.value.trim()
     });
   }
@@ -818,8 +1073,10 @@
       bgImage: projectBgImage,
       bgOverlay: clampBgOverlay(elProjectBgOverlay.value),
       assistantBg: elProjectAssistantBg.value.trim(),
+      assistantBgOpacity: clampOpacity(elProjectAssistantBgOpacity.value),
       assistantText: elProjectAssistantText.value.trim(),
       userBg: elProjectUserBg.value.trim(),
+      userBgOpacity: clampOpacity(elProjectUserBgOpacity.value),
       userText: elProjectUserText.value.trim()
     });
   }
@@ -859,13 +1116,40 @@
       bubble.style.background = "";
     });
     if (assistantBubble) {
-      if (profile.assistantBg) assistantBubble.style.background = profile.assistantBg;
+      if (profile.assistantBg) {
+        assistantBubble.style.background = colorWithOpacity(
+          profile.assistantBg,
+          profile.assistantBgOpacity
+        );
+      }
       if (profile.assistantText) assistantBubble.style.color = profile.assistantText;
     }
     if (userBubble) {
-      if (profile.userBg) userBubble.style.background = profile.userBg;
+      if (profile.userBg) {
+        userBubble.style.background = colorWithOpacity(profile.userBg, profile.userBgOpacity);
+      }
       if (profile.userText) userBubble.style.color = profile.userText;
     }
+  }
+
+  function colorWithOpacity(color, opacityPercent) {
+    const v = (color || "").trim();
+    if (!v) return "";
+    const probe = document.createElement("span");
+    probe.style.color = "";
+    probe.style.color = v;
+    if (!probe.style.color) return v;
+    document.body.appendChild(probe);
+    const rgba = getComputedStyle(probe).color;
+    probe.remove();
+    const m = rgba.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/i);
+    if (!m) return v;
+    const r = Number(m[1]);
+    const g = Number(m[2]);
+    const b = Number(m[3]);
+    const baseA = m[4] !== undefined ? Number(m[4]) : 1;
+    const a = Math.max(0, Math.min(1, baseA * (clampOpacity(opacityPercent) / 100)));
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
   }
 
   function syncSentimentHint(mode, elHint) {
