@@ -121,16 +121,20 @@
   }
 
   async function applyUpdateBadge(state) {
+    const actionApi = chrome.action;
+    if (!actionApi?.setBadgeText || !actionApi?.setTitle) return;
     if (state.updateAvailable) {
-      await chrome.action.setBadgeText({ text: "NEW" });
-      await chrome.action.setBadgeBackgroundColor({ color: "#d13b2e" });
-      await chrome.action.setTitle({
+      await actionApi.setBadgeText({ text: "NEW" });
+      if (actionApi?.setBadgeBackgroundColor) {
+        await actionApi.setBadgeBackgroundColor({ color: "#d13b2e" });
+      }
+      await actionApi.setTitle({
         title: `新しいバージョン ${state.latestVersion} があります（現在 ${state.currentVersion}）`
       });
       return;
     }
-    await chrome.action.setBadgeText({ text: "" });
-    await chrome.action.setTitle({ title: "ChatGPT Avatar Decorator" });
+    await actionApi.setBadgeText({ text: "" });
+    await actionApi.setTitle({ title: "ChatGPT Avatar Decorator" });
   }
 
   async function showUpdateNotification(latestVersion) {
