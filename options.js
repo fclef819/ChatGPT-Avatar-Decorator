@@ -12,6 +12,9 @@
   const UPDATE_PAGE_URL = "https://github.com/fclef819/ChatGPT-Avatar-Decorator";
 
   const elGlobalName = document.getElementById("globalName");
+  const elGlobalEnabled = document.getElementById("globalEnabled");
+  const elGlobalShowToggleButton = document.getElementById("globalShowToggleButton");
+  const elGlobalShortcutEnabled = document.getElementById("globalShortcutEnabled");
   const elGlobalMode = document.getElementById("globalMode");
   const elGlobalImages = document.getElementById("globalImages");
   const elGlobalAvatarCrop = document.getElementById("globalAvatarCrop");
@@ -173,6 +176,9 @@
   function defaultSettings() {
     return {
       global: {
+        enabled: true,
+        showToggleButton: true,
+        shortcutEnabled: true,
         name: "",
         mode: "random",
         images: Array(MAX_IMAGES).fill(""),
@@ -221,6 +227,9 @@
     }
     return {
       global: {
+        enabled: settings?.global?.enabled ?? true,
+        showToggleButton: settings?.global?.showToggleButton ?? true,
+        shortcutEnabled: settings?.global?.shortcutEnabled ?? true,
         name: settings?.global?.name || "",
         mode: settings?.global?.mode || "random",
         images: Array(MAX_IMAGES)
@@ -249,6 +258,9 @@
       const merged = mergeSettings(stored || defaultSettings());
       settingsCache = merged;
 
+      elGlobalEnabled.checked = merged.global.enabled ?? true;
+      elGlobalShowToggleButton.checked = merged.global.showToggleButton ?? true;
+      elGlobalShortcutEnabled.checked = merged.global.shortcutEnabled ?? true;
       elGlobalName.value = merged.global.name || "";
       elGlobalMode.value = merged.global.mode || "random";
       elGlobalAvatarSize.value = merged.global.avatarSize ?? 35;
@@ -266,6 +278,7 @@
       syncSentimentHint(elGlobalMode.value, elGlobalSentimentHint);
       globalImages = [...merged.global.images];
       globalBgImage = merged.global.bgImage || "";
+      updateFeatureToggleUi();
       updateBgPreview(elGlobalBgPreview, globalBgImage);
       buildImageSlots(elGlobalImages, globalImages, updateGlobalPreview, (file) =>
         processAvatarUpload(file, elGlobalAvatarCrop.checked)
@@ -275,6 +288,10 @@
       renderProjectList();
     } catch (err) {
       settingsCache = mergeSettings(defaultSettings());
+      elGlobalEnabled.checked = settingsCache.global.enabled ?? true;
+      elGlobalShowToggleButton.checked = settingsCache.global.showToggleButton ?? true;
+      elGlobalShortcutEnabled.checked = settingsCache.global.shortcutEnabled ?? true;
+      updateFeatureToggleUi();
       renderProjectList();
       showToast("設定の読み込みに失敗しました");
     }
@@ -415,6 +432,9 @@
       settingsCache = mergeSettings(parsed);
       const ok = await saveSettings();
       if (!ok) return;
+      elGlobalEnabled.checked = settingsCache.global.enabled ?? true;
+      elGlobalShowToggleButton.checked = settingsCache.global.showToggleButton ?? true;
+      elGlobalShortcutEnabled.checked = settingsCache.global.shortcutEnabled ?? true;
       elGlobalName.value = settingsCache.global.name || "";
       elGlobalMode.value = settingsCache.global.mode || "random";
       elGlobalAvatarSize.value = settingsCache.global.avatarSize ?? 35;
@@ -429,6 +449,7 @@
       elGlobalUserBgOpacity.value = clampOpacity(settingsCache.global.userBgOpacity);
       elGlobalUserText.value = settingsCache.global.userText || "";
       syncAllColorPickers();
+      updateFeatureToggleUi();
       syncSentimentHint(elGlobalMode.value, elGlobalSentimentHint);
       globalImages = [...settingsCache.global.images];
       globalBgImage = settingsCache.global.bgImage || "";
@@ -454,6 +475,19 @@
     toastTimer = setTimeout(() => {
       elToast.classList.remove("show");
     }, 1600);
+  }
+
+  function setInlineCheckDisabled(inputEl, disabled) {
+    if (!inputEl) return;
+    inputEl.disabled = disabled;
+    const label = inputEl.closest(".inline-check");
+    if (label) label.classList.toggle("is-disabled", disabled);
+  }
+
+  function updateFeatureToggleUi() {
+    const enabled = !!elGlobalEnabled?.checked;
+    setInlineCheckDisabled(elGlobalShowToggleButton, !enabled);
+    setInlineCheckDisabled(elGlobalShortcutEnabled, !enabled);
   }
 
   function formatDateTime(ts) {
@@ -534,6 +568,9 @@
   }
 
   async function saveGlobal() {
+    settingsCache.global.enabled = !!elGlobalEnabled.checked;
+    settingsCache.global.showToggleButton = !!elGlobalShowToggleButton.checked;
+    settingsCache.global.shortcutEnabled = !!elGlobalShortcutEnabled.checked;
     settingsCache.global.name = elGlobalName.value.trim();
     settingsCache.global.mode = elGlobalMode.value;
     settingsCache.global.images = [...globalImages];
@@ -686,6 +723,12 @@
   elSaveGlobal.addEventListener("click", saveGlobal);
   elSaveProject.addEventListener("click", saveProject);
   elClearProject.addEventListener("click", clearProjectForm);
+  elGlobalEnabled?.addEventListener("change", () => {
+    updateFeatureToggleUi();
+    updateGlobalPreview();
+  });
+  elGlobalShowToggleButton?.addEventListener("change", updateGlobalPreview);
+  elGlobalShortcutEnabled?.addEventListener("change", updateGlobalPreview);
   elGlobalMode.addEventListener("change", () => {
     syncSentimentHint(elGlobalMode.value, elGlobalSentimentHint);
   });
@@ -799,6 +842,7 @@
   bindColorPair(elProjectAssistantText, elProjectAssistantTextPicker, updateProjectPreview, "#111111");
   bindColorPair(elProjectUserBg, elProjectUserBgPicker, updateProjectPreview, "#f5f5f5");
   bindColorPair(elProjectUserText, elProjectUserTextPicker, updateProjectPreview, "#111111");
+  updateFeatureToggleUi();
   updateProjectPreview();
   refreshUpdateStatus();
   loadSettings();

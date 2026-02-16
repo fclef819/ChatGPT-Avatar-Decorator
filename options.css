@@ -64,6 +64,10 @@ h1 {
   font-weight: 500;
 }
 
+.inline-check.is-disabled {
+  opacity: 0.55;
+}
+
 .inline-row input[type="text"] {
   flex: 1 1 240px;
 }

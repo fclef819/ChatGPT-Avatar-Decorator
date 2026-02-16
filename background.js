@@ -54,6 +54,12 @@
         .catch((err) => sendResponse({ ok: false, error: err?.message || "status load failed" }));
       return true;
     }
+    if (message?.type === "cad:set-global-flags") {
+      setGlobalFlags(message?.flags || {})
+        .then((settings) => sendResponse({ ok: true, settings }))
+        .catch((err) => sendResponse({ ok: false, error: err?.message || "update flags failed" }));
+      return true;
+    }
     return false;
   });
 
@@ -188,6 +194,50 @@
       return legacy;
     }
     return {};
+  }
+
+  async function setGlobalFlags(flags) {
+    const settings = normalizeSettings(await getStoredSettings());
+    if ("enabled" in flags) settings.global.enabled = !!flags.enabled;
+    if ("showToggleButton" in flags) settings.global.showToggleButton = !!flags.showToggleButton;
+    if ("shortcutEnabled" in flags) settings.global.shortcutEnabled = !!flags.shortcutEnabled;
+    await setStoredSettings(settings);
+    await broadcastSettingsUpdated();
+    return settings;
+  }
+
+  async function broadcastSettingsUpdated() {
+    try {
+      const tabs = await chrome.tabs.query({
+        url: ["https://chatgpt.com/*", "https://chat.openai.com/*"]
+      });
+      await Promise.all(
+        tabs.map(async (tab) => {
+          if (!tab.id) return;
+          try {
+            await chrome.tabs.sendMessage(tab.id, { type: "cad:settings-updated" });
+          } catch {
+            // ignore tabs without content script context
+          }
+        })
+      );
+    } catch {
+      // ignore
+    }
+  }
+
+  function normalizeSettings(settings) {
+    const normalized = settings && typeof settings === "object" ? settings : {};
+    if (!normalized.global || typeof normalized.global !== "object") {
+      normalized.global = {};
+    }
+    if (normalized.global.enabled === undefined) normalized.global.enabled = true;
+    if (normalized.global.showToggleButton === undefined) normalized.global.showToggleButton = true;
+    if (normalized.global.shortcutEnabled === undefined) normalized.global.shortcutEnabled = true;
+    if (!normalized.projects || typeof normalized.projects !== "object") {
+      normalized.projects = {};
+    }
+    return normalized;
   }
 
   async function idbGetSettings() {

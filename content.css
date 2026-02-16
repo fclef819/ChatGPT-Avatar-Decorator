@@ -172,3 +172,48 @@ body.cad-bg .cad-list-dark [style*="main-surface-secondary"] {
     background-attachment: scroll !important;
   }
 }
+
+.cad-toggle-btn {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483644;
+  border: 1px solid rgba(255, 255, 255, 0.44);
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  background: rgba(24, 30, 42, 0.72);
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+  cursor: pointer;
+}
+
+.cad-toggle-btn:hover {
+  background: rgba(30, 40, 56, 0.85);
+}
+
+.cad-toggle-btn.is-off {
+  background: rgba(70, 22, 22, 0.78);
+}
+
+.cad-toggle-toast {
+  position: fixed;
+  right: 16px;
+  bottom: 56px;
+  z-index: 2147483645;
+  background: rgba(15, 18, 24, 0.88);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.cad-toggle-toast.hide {
+  opacity: 0;
+  transform: translateY(4px);
+}

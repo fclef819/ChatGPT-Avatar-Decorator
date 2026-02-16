@@ -8,10 +8,17 @@
   let lastThemeSignature = "";
   let scanScheduled = false;
   let themeDirty = true;
+  let featureSettings = null;
+  let toggleButton = null;
+  let toggleBtnScheduled = false;
   const rgbaCache = new Map();
+  const TOGGLE_SHORTCUT_KEY = "A";
 
   const defaultSettings = {
     global: {
+      enabled: true,
+      showToggleButton: true,
+      shortcutEnabled: true,
       name: "",
       mode: "random",
       images: Array(MAX_IMAGES).fill(""),
@@ -86,6 +93,9 @@
     }
     const merged = {
       global: {
+        enabled: settings.global?.enabled ?? true,
+        showToggleButton: settings.global?.showToggleButton ?? true,
+        shortcutEnabled: settings.global?.shortcutEnabled ?? true,
         name: settings.global?.name || "",
         mode: settings.global?.mode || "random",
         images: Array(MAX_IMAGES).fill("").map((_, i) => settings.global?.images?.[i] || ""),
@@ -248,6 +258,29 @@
     setCssVar(root, "--cad-user-bg", colorWithOpacity(profile.userBg, profile.userBgOpacity));
     setCssVar(root, "--cad-user-text", profile.userText);
     lastThemeSignature = signature;
+    themeDirty = false;
+  }
+
+  function clearTheme() {
+    const root = document.documentElement;
+    const body = document.body;
+    clearBackgroundStyles(lastBackgroundTargets);
+    clearGlassStyles(lastGlassTargets);
+    clearProjectHeaderStyles(lastProjectHeaderTargets);
+    clearListDarkStyles(lastListDarkTargets);
+    lastBackgroundTargets = [];
+    lastGlassTargets = [];
+    lastProjectHeaderTargets = [];
+    lastListDarkTargets = [];
+    root.classList.remove("cad-root", "cad-bg");
+    body.classList.remove("cad-bg");
+    root.style.removeProperty("--cad-bg-image");
+    root.style.removeProperty("--cad-bg-overlay");
+    root.style.removeProperty("--cad-assistant-bg");
+    root.style.removeProperty("--cad-assistant-text");
+    root.style.removeProperty("--cad-user-bg");
+    root.style.removeProperty("--cad-user-text");
+    lastThemeSignature = "";
     themeDirty = false;
   }
 
@@ -446,8 +479,101 @@
     }
   }
 
+  function isFeatureEnabled(settings) {
+    return settings?.global?.enabled ?? true;
+  }
+
+  function getToggleLabel(enabled) {
+    return enabled ? "CAD: ON" : "CAD: OFF";
+  }
+
+  function upsertToggleButton(settings) {
+    const show = settings?.global?.showToggleButton ?? true;
+    if (!show) {
+      removeToggleButton();
+      return;
+    }
+    if (!toggleButton) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "cad-toggle-btn";
+      btn.addEventListener("click", () => {
+        const current = isFeatureEnabled(featureSettings || settings);
+        void updateEnabledFlag(!current, true);
+      });
+      toggleButton = btn;
+    }
+    if (!toggleButton.isConnected) {
+      document.body.appendChild(toggleButton);
+    }
+    const enabled = isFeatureEnabled(settings);
+    toggleButton.textContent = getToggleLabel(enabled);
+    toggleButton.classList.toggle("is-off", !enabled);
+    toggleButton.title = `Avatar Decorator ${enabled ? "ON" : "OFF"}`;
+  }
+
+  function removeToggleButton() {
+    if (toggleButton?.isConnected) toggleButton.remove();
+  }
+
+  function scheduleToggleButtonUpdate(settings) {
+    if (toggleBtnScheduled) return;
+    toggleBtnScheduled = true;
+    requestAnimationFrame(() => {
+      toggleBtnScheduled = false;
+      upsertToggleButton(settings || featureSettings || mergeSettings({}));
+    });
+  }
+
+  function updateEnabledFlag(nextEnabled, notify = false) {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        {
+          type: "cad:set-global-flags",
+          flags: { enabled: !!nextEnabled }
+        },
+        (res) => {
+          const ok = !chrome.runtime?.lastError && res?.ok;
+          if (!ok) {
+            resolve(false);
+            return;
+          }
+          featureSettings = mergeSettings(res.settings || {});
+          resetDecorations();
+          if (!isFeatureEnabled(featureSettings)) {
+            clearTheme();
+          }
+          scheduleToggleButtonUpdate(featureSettings);
+          scheduleScan(true);
+          if (notify) showToggleToast(isFeatureEnabled(featureSettings));
+          resolve(true);
+        }
+      );
+    });
+  }
+
+  function showToggleToast(enabled) {
+    const existing = document.querySelector(".cad-toggle-toast");
+    if (existing) existing.remove();
+    const toast = document.createElement("div");
+    toast.className = "cad-toggle-toast";
+    toast.textContent = `Avatar Decorator ${enabled ? "ON" : "OFF"}`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      toast.classList.add("hide");
+      setTimeout(() => toast.remove(), 180);
+    }, 900);
+  }
+
   function scanAndDecorate() {
     getSettings((settings) => {
+      featureSettings = settings;
+      scheduleToggleButtonUpdate(settings);
+      if (!isFeatureEnabled(settings)) {
+        resetDecorations();
+        clearTheme();
+        return;
+      }
       const profile = getActiveProfile(settings);
       applyTheme(profile);
       applyAskTooltipLabel(profile);
@@ -543,11 +669,33 @@
     scheduleScan(true);
   }
 
+  function handleShortcutToggle(event) {
+    const settings = featureSettings || defaultSettings;
+    const shortcutEnabled = settings?.global?.shortcutEnabled ?? true;
+    if (!shortcutEnabled) return;
+    if (!event.altKey || !event.shiftKey) return;
+    if (event.repeat) return;
+    const key = String(event.key || "").toUpperCase();
+    if (key !== TOGGLE_SHORTCUT_KEY) return;
+    const activeEl = document.activeElement;
+    const isTyping =
+      activeEl &&
+      (activeEl.tagName === "INPUT" ||
+        activeEl.tagName === "TEXTAREA" ||
+        activeEl.isContentEditable === true);
+    if (isTyping) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const current = isFeatureEnabled(settings);
+    void updateEnabledFlag(!current, true);
+  }
+
   function start() {
     scheduleScan(true);
     observer.observe(document.body, { childList: true, subtree: true });
     setInterval(handleLocationChange, 800);
     window.addEventListener("resize", () => scheduleScan(true));
+    window.addEventListener("keydown", handleShortcutToggle, true);
   }
 
   chrome.runtime.onMessage.addListener((message) => {

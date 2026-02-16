@@ -23,6 +23,26 @@
       <section class="card">
         <h2>全体設定</h2>
         <div class="field">
+          <label>拡張機能制御</label>
+          <div class="actions">
+            <label class="inline-check">
+              <input id="globalEnabled" type="checkbox" checked />
+              拡張機能ON/OFF
+            </label>
+            <label class="inline-check">
+              <input id="globalShowToggleButton" type="checkbox" checked />
+              ChatGPTにON/OFFボタンを表示
+            </label>
+            <label class="inline-check">
+              <input id="globalShortcutEnabled" type="checkbox" checked />
+              ショートカットでON/OFF（固定: Alt+Shift+A）
+            </label>
+          </div>
+          <p class="hint">
+            拡張機能をOFFにすると、下2つは自動で操作不可になります（保存値は保持）。
+          </p>
+        </div>
+        <div class="field">
           <label for="globalName">表示名</label>
           <input id="globalName" type="text" placeholder="例: サポートAI" />
         </div>
