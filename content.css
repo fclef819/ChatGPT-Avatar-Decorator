@@ -94,30 +94,22 @@ body.cad-bg div[class*="@container/main"] {
   color: var(--cad-user-text) !important;
 }
 
-.cad-message-assistant pre,
-.cad-message-assistant pre *,
-.cad-message-assistant code,
-.cad-message-assistant code *,
-.cad-message-assistant kbd,
-.cad-message-assistant kbd *,
-.cad-message-assistant samp,
-.cad-message-assistant samp *,
-.cad-message-user pre,
-.cad-message-user pre *,
-.cad-message-user code,
-.cad-message-user code *,
-.cad-message-user kbd,
-.cad-message-user kbd *,
-.cad-message-user samp,
-.cad-message-user samp *,
-.cad-message-assistant [data-language],
-.cad-message-assistant [data-language] *,
-.cad-message-user [data-language],
-.cad-message-user [data-language] *,
-.cad-message-assistant [class*="code-block"],
-.cad-message-assistant [class*="code-block"] *,
-.cad-message-user [class*="code-block"],
-.cad-message-user [class*="code-block"] * {
+.cad-message-assistant
+  > :not(.cad-header):is(pre, code, kbd, samp, [data-language], [class*="code-block"]),
+.cad-message-assistant
+  > :not(.cad-header):is(pre, code, kbd, samp, [data-language], [class*="code-block"])
+  *,
+.cad-message-assistant
+  > :not(.cad-header)
+  :is(pre, code, kbd, samp, [data-language], [class*="code-block"]),
+.cad-message-assistant
+  > :not(.cad-header)
+  :is(pre, code, kbd, samp, [data-language], [class*="code-block"])
+  *,
+.cad-message-user > :not(.cad-header):is(pre, code, kbd, samp, [data-language], [class*="code-block"]),
+.cad-message-user > :not(.cad-header):is(pre, code, kbd, samp, [data-language], [class*="code-block"]) *,
+.cad-message-user > :not(.cad-header) :is(pre, code, kbd, samp, [data-language], [class*="code-block"]),
+.cad-message-user > :not(.cad-header) :is(pre, code, kbd, samp, [data-language], [class*="code-block"]) * {
   color: var(--text-primary, inherit) !important;
 }
 
