@@ -72,21 +72,31 @@ body.cad-bg div[class*="@container/main"] {
 
 .cad-message-assistant > :not(.cad-header) {
   background-color: var(--cad-assistant-bg) !important;
-  color: var(--cad-assistant-text) !important;
   padding: var(--cad-bubble-padding-y) var(--cad-bubble-padding-x) !important;
   border-radius: var(--cad-bubble-radius) !important;
 }
 
 .cad-message-user > :not(.cad-header) {
   background-color: var(--cad-user-bg) !important;
-  color: var(--cad-user-text) !important;
   padding: var(--cad-bubble-padding-y) var(--cad-bubble-padding-x) !important;
   border-radius: var(--cad-bubble-radius) !important;
 }
 
-.cad-message-assistant :not(pre):not(pre *):not(code):not(code *):not(kbd):not(kbd *):not(samp):not(samp *),
-.cad-message-user :not(pre):not(pre *):not(code):not(code *):not(kbd):not(kbd *):not(samp):not(samp *) {
+.cad-message-assistant > :not(.cad-header):not(pre):not(code):not(kbd):not(samp),
+.cad-message-assistant > :not(.cad-header) :not(pre):not(pre *):not(code):not(code *):not(kbd):not(kbd *):not(samp):not(samp *),
+.cad-message-user > :not(.cad-header):not(pre):not(code):not(kbd):not(samp),
+.cad-message-user > :not(.cad-header) :not(pre):not(pre *):not(code):not(code *):not(kbd):not(kbd *):not(samp):not(samp *) {
   color: inherit !important;
+}
+
+.cad-message-assistant > :not(.cad-header),
+.cad-message-assistant > :not(.cad-header) * {
+  color: var(--cad-assistant-text) !important;
+}
+
+.cad-message-user > :not(.cad-header),
+.cad-message-user > :not(.cad-header) * {
+  color: var(--cad-user-text) !important;
 }
 
 .cad-message-assistant pre,
@@ -105,7 +115,7 @@ body.cad-bg div[class*="@container/main"] {
 .cad-message-user kbd *,
 .cad-message-user samp,
 .cad-message-user samp * {
-  color: revert !important;
+  color: var(--text-primary, inherit) !important;
 }
 
 .cad-glass-panel {
