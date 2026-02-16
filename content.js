@@ -9,6 +9,9 @@
   let scanScheduled = false;
   let themeDirty = true;
   let featureSettings = null;
+  let cachedSettings = mergeSettings({});
+  let settingsLoaded = false;
+  let observedRoot = null;
   let toggleButton = null;
   let toggleBtnScheduled = false;
   const rgbaCache = new Map();
@@ -57,14 +60,22 @@
     return input;
   }
 
-  function getSettings(cb) {
-    chrome.runtime.sendMessage({ type: "cad:get-settings" }, (res) => {
-      const err = chrome.runtime?.lastError;
-      if (err || !res?.ok) {
-        cb(mergeSettings({}));
-        return;
-      }
-      cb(mergeSettings(res.settings || {}));
+  function refreshCachedSettings() {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage({ type: "cad:get-settings" }, (res) => {
+        const err = chrome.runtime?.lastError;
+        if (err || !res?.ok) {
+          cachedSettings = mergeSettings({});
+          featureSettings = cachedSettings;
+          settingsLoaded = true;
+          resolve(cachedSettings);
+          return;
+        }
+        cachedSettings = mergeSettings(res.settings || {});
+        featureSettings = cachedSettings;
+        settingsLoaded = true;
+        resolve(cachedSettings);
+      });
     });
   }
 
@@ -538,7 +549,9 @@
             resolve(false);
             return;
           }
-          featureSettings = mergeSettings(res.settings || {});
+          cachedSettings = mergeSettings(res.settings || {});
+          settingsLoaded = true;
+          featureSettings = cachedSettings;
           resetDecorations();
           if (!isFeatureEnabled(featureSettings)) {
             clearTheme();
@@ -566,25 +579,25 @@
   }
 
   function scanAndDecorate() {
-    getSettings((settings) => {
-      featureSettings = settings;
-      scheduleToggleButtonUpdate(settings);
-      if (!isFeatureEnabled(settings)) {
-        resetDecorations();
-        clearTheme();
-        return;
-      }
-      const profile = getActiveProfile(settings);
-      applyTheme(profile);
-      applyAskTooltipLabel(profile);
-      const nodes = document.querySelectorAll('div[data-message-author-role="assistant"]');
-      nodes.forEach((el) => {
-        applyMessageTheme(el, "assistant", profile);
-        decorateMessage(el, profile);
-      });
-      const userNodes = document.querySelectorAll('div[data-message-author-role="user"]');
-      userNodes.forEach((el) => applyMessageTheme(el, "user", profile));
+    if (!settingsLoaded) return;
+    const settings = cachedSettings;
+    featureSettings = settings;
+    scheduleToggleButtonUpdate(settings);
+    if (!isFeatureEnabled(settings)) {
+      resetDecorations();
+      clearTheme();
+      return;
+    }
+    const profile = getActiveProfile(settings);
+    applyTheme(profile);
+    applyAskTooltipLabel(profile);
+    const nodes = document.querySelectorAll('div[data-message-author-role="assistant"]');
+    nodes.forEach((el) => {
+      applyMessageTheme(el, "assistant", profile);
+      decorateMessage(el, profile);
     });
+    const userNodes = document.querySelectorAll('div[data-message-author-role="user"]');
+    userNodes.forEach((el) => applyMessageTheme(el, "user", profile));
   }
 
   function applyAskTooltipLabel(profile) {
@@ -615,16 +628,19 @@
       }
     });
 
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-    let node = walker.nextNode();
-    while (node) {
-      const text = node.nodeValue || "";
-      if (text.includes("に質問する") && text.includes("ChatGPT")) {
-        const next = replaceAskLabel(text);
-        if (next !== text) node.nodeValue = next;
+    const textTargets = document.querySelectorAll(
+      'button span, [role="tooltip"] span, [class*="tooltip"] span, [data-radix-popper-content-wrapper] span'
+    );
+    textTargets.forEach((el) => {
+      if (el.childElementCount > 0) return;
+      const text = el.textContent || "";
+      if (!text.includes("に質問する") || !text.includes("ChatGPT")) return;
+      if (!el.dataset.cadAskBaseText) {
+        el.dataset.cadAskBaseText = text;
       }
-      node = walker.nextNode();
-    }
+      const next = replaceAskLabel(el.dataset.cadAskBaseText);
+      if (next !== text) el.textContent = next;
+    });
   }
 
   function resetDecorations() {
@@ -642,9 +658,45 @@
     messageImageCache = new WeakMap();
   }
 
-  const observer = new MutationObserver(() => {
+  function isInjectedNode(node) {
+    if (!(node instanceof Element)) return false;
+    return (
+      node.classList.contains("cad-header") ||
+      node.classList.contains("cad-toggle-btn") ||
+      node.classList.contains("cad-toggle-toast") ||
+      !!node.closest(".cad-header, .cad-toggle-btn, .cad-toggle-toast")
+    );
+  }
+
+  function shouldProcessMutations(mutations) {
+    for (const mutation of mutations) {
+      if (mutation.type !== "childList") continue;
+      for (const node of mutation.addedNodes) {
+        if (!isInjectedNode(node)) return true;
+      }
+      for (const node of mutation.removedNodes) {
+        if (!isInjectedNode(node)) return true;
+      }
+    }
+    return false;
+  }
+
+  const observer = new MutationObserver((mutations) => {
+    if (!shouldProcessMutations(mutations)) return;
     scheduleScan();
   });
+
+  function getObserveRoot() {
+    return document.getElementById("thread") || document.querySelector("main") || document.body;
+  }
+
+  function ensureObserverAttached() {
+    const nextRoot = getObserveRoot();
+    if (!nextRoot || observedRoot === nextRoot) return;
+    if (observedRoot) observer.disconnect();
+    observedRoot = nextRoot;
+    observer.observe(observedRoot, { childList: true, subtree: true });
+  }
 
   function scheduleScan(forceTheme = false) {
     if (forceTheme) themeDirty = true;
@@ -652,6 +704,7 @@
     scanScheduled = true;
     requestAnimationFrame(() => {
       scanScheduled = false;
+      ensureObserverAttached();
       scanAndDecorate();
     });
   }
@@ -666,7 +719,22 @@
     lastPath = path;
     lastProjectId = projectId;
     resetDecorations();
+    ensureObserverAttached();
     scheduleScan(true);
+  }
+
+  function patchHistoryEvents() {
+    const { pushState, replaceState } = history;
+    history.pushState = function patchedPushState(...args) {
+      const out = pushState.apply(this, args);
+      handleLocationChange();
+      return out;
+    };
+    history.replaceState = function patchedReplaceState(...args) {
+      const out = replaceState.apply(this, args);
+      handleLocationChange();
+      return out;
+    };
   }
 
   function handleShortcutToggle(event) {
@@ -691,9 +759,10 @@
   }
 
   function start() {
-    scheduleScan(true);
-    observer.observe(document.body, { childList: true, subtree: true });
-    setInterval(handleLocationChange, 800);
+    patchHistoryEvents();
+    ensureObserverAttached();
+    refreshCachedSettings().then(() => scheduleScan(true));
+    window.addEventListener("popstate", handleLocationChange);
     window.addEventListener("resize", () => scheduleScan(true));
     window.addEventListener("keydown", handleShortcutToggle, true);
   }
@@ -705,7 +774,7 @@
       });
       messageImageCache = new WeakMap();
       rgbaCache.clear();
-      scheduleScan(true);
+      refreshCachedSettings().then(() => scheduleScan(true));
     }
   });
 
