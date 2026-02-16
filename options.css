@@ -227,6 +227,23 @@ input[type="color"] {
   flex-wrap: wrap;
 }
 
+.update-card {
+  border-color: #d4c093;
+  background: #fff9ec;
+}
+
+.update-card.is-available {
+  border-color: #d0804a;
+  background: #fff2e8;
+}
+
+.update-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
 button {
   padding: 8px 12px;
   border-radius: 8px;

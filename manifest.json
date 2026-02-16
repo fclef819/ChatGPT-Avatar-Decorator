@@ -3,10 +3,11 @@
   "name": "ChatGPT Avatar Decorator",
   "version": "0.1.0",
   "description": "Show custom name and avatar on ChatGPT assistant responses.",
-  "permissions": ["storage"],
+  "permissions": ["storage", "alarms", "notifications"],
   "host_permissions": [
     "https://chatgpt.com/*",
-    "https://chat.openai.com/*"
+    "https://chat.openai.com/*",
+    "https://raw.githubusercontent.com/*"
   ],
   "content_scripts": [
     {

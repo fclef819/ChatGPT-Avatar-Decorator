@@ -9,6 +9,7 @@
   const MAX_BG_LONG_EDGE = 2048;
   const AVATAR_WEBP_QUALITY = 0.9;
   const BG_WEBP_QUALITY = 0.82;
+  const UPDATE_PAGE_URL = "https://github.com/fclef819/ChatGPT-Avatar-Decorator";
 
   const elGlobalName = document.getElementById("globalName");
   const elGlobalMode = document.getElementById("globalMode");
@@ -76,6 +77,11 @@
   const elAvatarCropApply = document.getElementById("avatarCropApply");
   const elAvatarCropCancel = document.getElementById("avatarCropCancel");
   const elToast = document.getElementById("toast");
+  const elUpdateCard = document.getElementById("updateCard");
+  const elUpdateStatusText = document.getElementById("updateStatusText");
+  const elUpdateMetaText = document.getElementById("updateMetaText");
+  const elCheckUpdateNow = document.getElementById("checkUpdateNow");
+  const elOpenUpdateGuide = document.getElementById("openUpdateGuide");
 
   let settingsCache = null;
   let globalImages = Array(MAX_IMAGES).fill("");
@@ -450,6 +456,83 @@
     }, 1600);
   }
 
+  function formatDateTime(ts) {
+    if (!ts) return "未確認";
+    const d = new Date(ts);
+    if (Number.isNaN(d.getTime())) return "未確認";
+    return d.toLocaleString("ja-JP");
+  }
+
+  function renderUpdateStatus(status) {
+    const current = chrome.runtime.getManifest().version;
+    if (!status) {
+      if (elUpdateStatusText) elUpdateStatusText.textContent = "更新状態を取得できませんでした。";
+      if (elUpdateMetaText) elUpdateMetaText.textContent = `現在: ${current}`;
+      elUpdateCard?.classList.remove("is-available");
+      return;
+    }
+
+    const latest = status.latestVersion || current;
+    const checkedAt = formatDateTime(status.checkedAt);
+    if (status.updateAvailable) {
+      elUpdateCard?.classList.add("is-available");
+      if (elUpdateStatusText) {
+        elUpdateStatusText.textContent = `新しいバージョンがあります（現在 ${current} / 最新 ${latest}）`;
+      }
+      if (elUpdateMetaText) {
+        elUpdateMetaText.textContent = `最終確認: ${checkedAt} / GitHubで pull 後に拡張を再読み込みしてください。`;
+      }
+      return;
+    }
+
+    elUpdateCard?.classList.remove("is-available");
+    if (status.error) {
+      if (elUpdateStatusText) elUpdateStatusText.textContent = "更新確認に失敗しました。";
+      if (elUpdateMetaText) {
+        elUpdateMetaText.textContent = `最終確認: ${checkedAt} / エラー: ${status.error}`;
+      }
+      return;
+    }
+
+    if (elUpdateStatusText) elUpdateStatusText.textContent = "最新版を利用中です。";
+    if (elUpdateMetaText) elUpdateMetaText.textContent = `現在: ${current} / 最終確認: ${checkedAt}`;
+  }
+
+  function getUpdateStatus() {
+    return new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage({ type: "cad:get-update-status" }, (res) => {
+        const err = chrome.runtime?.lastError;
+        if (err || !res?.ok) {
+          reject(new Error(err?.message || res?.error || "status load failed"));
+          return;
+        }
+        resolve(res.status || null);
+      });
+    });
+  }
+
+  function checkUpdateNow() {
+    return new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage({ type: "cad:check-update" }, (res) => {
+        const err = chrome.runtime?.lastError;
+        if (err || !res?.ok) {
+          reject(new Error(err?.message || res?.error || "check failed"));
+          return;
+        }
+        resolve(res.status || null);
+      });
+    });
+  }
+
+  async function refreshUpdateStatus() {
+    try {
+      const status = await getUpdateStatus();
+      renderUpdateStatus(status);
+    } catch {
+      renderUpdateStatus(null);
+    }
+  }
+
   async function saveGlobal() {
     settingsCache.global.name = elGlobalName.value.trim();
     settingsCache.global.mode = elGlobalMode.value;
@@ -606,6 +689,27 @@
   elGlobalMode.addEventListener("change", () => {
     syncSentimentHint(elGlobalMode.value, elGlobalSentimentHint);
   });
+  elCheckUpdateNow?.addEventListener("click", async () => {
+    if (elCheckUpdateNow) elCheckUpdateNow.disabled = true;
+    if (elUpdateStatusText) elUpdateStatusText.textContent = "更新を確認中...";
+    try {
+      const status = await checkUpdateNow();
+      renderUpdateStatus(status);
+      if (status?.updateAvailable) {
+        showToast(`新しいバージョン ${status.latestVersion} があります`);
+      } else {
+        showToast("最新版です");
+      }
+    } catch {
+      showToast("更新確認に失敗しました");
+      await refreshUpdateStatus();
+    } finally {
+      if (elCheckUpdateNow) elCheckUpdateNow.disabled = false;
+    }
+  });
+  elOpenUpdateGuide?.addEventListener("click", () => {
+    chrome.tabs.create({ url: UPDATE_PAGE_URL });
+  });
   elGlobalAvatarCrop.addEventListener("change", () => {
     settingsCache.global.avatarCrop = elGlobalAvatarCrop.checked;
   });
@@ -696,6 +800,7 @@
   bindColorPair(elProjectUserBg, elProjectUserBgPicker, updateProjectPreview, "#f5f5f5");
   bindColorPair(elProjectUserText, elProjectUserTextPicker, updateProjectPreview, "#111111");
   updateProjectPreview();
+  refreshUpdateStatus();
   loadSettings();
 
   function normalizeProjectId(input) {
