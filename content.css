@@ -84,8 +84,8 @@ body.cad-bg div[class*="@container/main"] {
   border-radius: var(--cad-bubble-radius) !important;
 }
 
-.cad-message-assistant *,
-.cad-message-user * {
+.cad-message-assistant :not(pre):not(pre *):not(code):not(code *):not(kbd):not(kbd *):not(samp):not(samp *),
+.cad-message-user :not(pre):not(pre *):not(code):not(code *):not(kbd):not(kbd *):not(samp):not(samp *) {
   color: inherit !important;
 }
 
