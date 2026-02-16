@@ -11,11 +11,13 @@
   let featureSettings = null;
   let cachedSettings = mergeSettings({});
   let settingsLoaded = false;
-  let observedRoot = null;
   let toggleButton = null;
   let toggleBtnScheduled = false;
+  let fallbackObserverTimer = null;
+  let fallbackObserverActive = false;
   const rgbaCache = new Map();
   const TOGGLE_SHORTCUT_KEY = "A";
+  const FALLBACK_OBSERVER_WINDOW_MS = 3500;
 
   const defaultSettings = {
     global: {
@@ -684,18 +686,20 @@
   const observer = new MutationObserver((mutations) => {
     if (!shouldProcessMutations(mutations)) return;
     scheduleScan();
+    startFallbackObservation(1200);
   });
 
-  function getObserveRoot() {
-    return document.getElementById("thread") || document.querySelector("main") || document.body;
-  }
-
-  function ensureObserverAttached() {
-    const nextRoot = getObserveRoot();
-    if (!nextRoot || observedRoot === nextRoot) return;
-    if (observedRoot) observer.disconnect();
-    observedRoot = nextRoot;
-    observer.observe(observedRoot, { childList: true, subtree: true });
+  function startFallbackObservation(windowMs = FALLBACK_OBSERVER_WINDOW_MS) {
+    if (!fallbackObserverActive) {
+      observer.observe(document.body, { childList: true, subtree: true });
+      fallbackObserverActive = true;
+    }
+    if (fallbackObserverTimer) clearTimeout(fallbackObserverTimer);
+    fallbackObserverTimer = setTimeout(() => {
+      observer.disconnect();
+      fallbackObserverActive = false;
+      fallbackObserverTimer = null;
+    }, windowMs);
   }
 
   function scheduleScan(forceTheme = false) {
@@ -704,7 +708,6 @@
     scanScheduled = true;
     requestAnimationFrame(() => {
       scanScheduled = false;
-      ensureObserverAttached();
       scanAndDecorate();
     });
   }
@@ -719,8 +722,8 @@
     lastPath = path;
     lastProjectId = projectId;
     resetDecorations();
-    ensureObserverAttached();
     scheduleScan(true);
+    startFallbackObservation();
   }
 
   function patchHistoryEvents() {
@@ -735,6 +738,26 @@
       handleLocationChange();
       return out;
     };
+  }
+
+  function handleUiNavigationTrigger(event) {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const hit = target.closest(
+      [
+        'a[href]',
+        'button',
+        '[role="button"]',
+        '[data-testid*="conversation"]',
+        '[data-testid*="chat"]',
+        '[data-testid*="project"]',
+        "aside",
+        "nav"
+      ].join(",")
+    );
+    if (!hit) return;
+    scheduleScan();
+    startFallbackObservation();
   }
 
   function handleShortcutToggle(event) {
@@ -760,9 +783,11 @@
 
   function start() {
     patchHistoryEvents();
-    ensureObserverAttached();
     refreshCachedSettings().then(() => scheduleScan(true));
+    startFallbackObservation();
     window.addEventListener("popstate", handleLocationChange);
+    window.addEventListener("pointerup", handleUiNavigationTrigger, true);
+    window.addEventListener("click", handleUiNavigationTrigger, true);
     window.addEventListener("resize", () => scheduleScan(true));
     window.addEventListener("keydown", handleShortcutToggle, true);
   }
@@ -774,7 +799,10 @@
       });
       messageImageCache = new WeakMap();
       rgbaCache.clear();
-      refreshCachedSettings().then(() => scheduleScan(true));
+      refreshCachedSettings().then(() => {
+        scheduleScan(true);
+        startFallbackObservation();
+      });
     }
   });
 
