@@ -64,20 +64,27 @@
 
   function refreshCachedSettings() {
     return new Promise((resolve) => {
-      chrome.runtime.sendMessage({ type: "cad:get-settings" }, (res) => {
-        const err = chrome.runtime?.lastError;
-        if (err || !res?.ok) {
-          cachedSettings = mergeSettings({});
+      try {
+        chrome.runtime.sendMessage({ type: "cad:get-settings" }, (res) => {
+          const err = chrome.runtime?.lastError;
+          if (err || !res?.ok) {
+            cachedSettings = mergeSettings({});
+            featureSettings = cachedSettings;
+            settingsLoaded = true;
+            resolve(cachedSettings);
+            return;
+          }
+          cachedSettings = mergeSettings(res.settings || {});
           featureSettings = cachedSettings;
           settingsLoaded = true;
           resolve(cachedSettings);
-          return;
-        }
-        cachedSettings = mergeSettings(res.settings || {});
+        });
+      } catch {
+        cachedSettings = mergeSettings({});
         featureSettings = cachedSettings;
         settingsLoaded = true;
         resolve(cachedSettings);
-      });
+      }
     });
   }
 
@@ -540,30 +547,34 @@
 
   function updateEnabledFlag(nextEnabled, notify = false) {
     return new Promise((resolve) => {
-      chrome.runtime.sendMessage(
-        {
-          type: "cad:set-global-flags",
-          flags: { enabled: !!nextEnabled }
-        },
-        (res) => {
-          const ok = !chrome.runtime?.lastError && res?.ok;
-          if (!ok) {
-            resolve(false);
-            return;
+      try {
+        chrome.runtime.sendMessage(
+          {
+            type: "cad:set-global-flags",
+            flags: { enabled: !!nextEnabled }
+          },
+          (res) => {
+            const ok = !chrome.runtime?.lastError && res?.ok;
+            if (!ok) {
+              resolve(false);
+              return;
+            }
+            cachedSettings = mergeSettings(res.settings || {});
+            settingsLoaded = true;
+            featureSettings = cachedSettings;
+            resetDecorations();
+            if (!isFeatureEnabled(featureSettings)) {
+              clearTheme();
+            }
+            scheduleToggleButtonUpdate(featureSettings);
+            scheduleScan(true);
+            if (notify) showToggleToast(isFeatureEnabled(featureSettings));
+            resolve(true);
           }
-          cachedSettings = mergeSettings(res.settings || {});
-          settingsLoaded = true;
-          featureSettings = cachedSettings;
-          resetDecorations();
-          if (!isFeatureEnabled(featureSettings)) {
-            clearTheme();
-          }
-          scheduleToggleButtonUpdate(featureSettings);
-          scheduleScan(true);
-          if (notify) showToggleToast(isFeatureEnabled(featureSettings));
-          resolve(true);
-        }
-      );
+        );
+      } catch {
+        resolve(false);
+      }
     });
   }
 
