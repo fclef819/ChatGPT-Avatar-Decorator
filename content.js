@@ -773,7 +773,8 @@
     );
     if (!hit) return;
     scheduleScan();
-    startFallbackObservation();
+    startFallbackObservation(8000);
+    schedulePostNavigationRescans();
   }
 
   function handleShortcutToggle(event) {
