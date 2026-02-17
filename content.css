@@ -70,30 +70,70 @@ body.cad-bg div[class*="@container/main"] {
   margin-right: 4px;
 }
 
+.cad-theme-active div[data-message-author-role="assistant"] > :not(.cad-header),
 .cad-message-assistant > :not(.cad-header) {
   background-color: var(--cad-assistant-bg) !important;
   padding: var(--cad-bubble-padding-y) var(--cad-bubble-padding-x) !important;
   border-radius: var(--cad-bubble-radius) !important;
 }
 
+.cad-theme-active div[data-message-author-role="user"] > :not(.cad-header),
 .cad-message-user > :not(.cad-header) {
   background-color: var(--cad-user-bg) !important;
   padding: var(--cad-bubble-padding-y) var(--cad-bubble-padding-x) !important;
   border-radius: var(--cad-bubble-radius) !important;
 }
 
+.cad-theme-active div[data-message-author-role="assistant"],
+.cad-theme-active div[data-message-author-role="assistant"] > :not(.cad-header),
+.cad-theme-active div[data-message-author-role="assistant"] > :not(.cad-header) *,
 .cad-message-assistant,
 .cad-message-assistant > :not(.cad-header),
 .cad-message-assistant > :not(.cad-header) * {
   color: var(--cad-assistant-text) !important;
 }
 
+.cad-theme-active div[data-message-author-role="user"],
+.cad-theme-active div[data-message-author-role="user"] > :not(.cad-header),
+.cad-theme-active div[data-message-author-role="user"] > :not(.cad-header) *,
 .cad-message-user,
 .cad-message-user > :not(.cad-header),
 .cad-message-user > :not(.cad-header) * {
   color: var(--cad-user-text) !important;
 }
 
+.cad-theme-active
+  div[data-message-author-role="assistant"]
+  > :not(.cad-header):is(pre, code, kbd, samp, [data-language], [class*="code-block"]),
+.cad-theme-active
+  div[data-message-author-role="assistant"]
+  > :not(.cad-header):is(pre, code, kbd, samp, [data-language], [class*="code-block"])
+  *,
+.cad-theme-active
+  div[data-message-author-role="assistant"]
+  > :not(.cad-header)
+  :is(pre, code, kbd, samp, [data-language], [class*="code-block"]),
+.cad-theme-active
+  div[data-message-author-role="assistant"]
+  > :not(.cad-header)
+  :is(pre, code, kbd, samp, [data-language], [class*="code-block"])
+  *,
+.cad-theme-active
+  div[data-message-author-role="user"]
+  > :not(.cad-header):is(pre, code, kbd, samp, [data-language], [class*="code-block"]),
+.cad-theme-active
+  div[data-message-author-role="user"]
+  > :not(.cad-header):is(pre, code, kbd, samp, [data-language], [class*="code-block"])
+  *,
+.cad-theme-active
+  div[data-message-author-role="user"]
+  > :not(.cad-header)
+  :is(pre, code, kbd, samp, [data-language], [class*="code-block"]),
+.cad-theme-active
+  div[data-message-author-role="user"]
+  > :not(.cad-header)
+  :is(pre, code, kbd, samp, [data-language], [class*="code-block"])
+  *,
 .cad-message-assistant
   > :not(.cad-header):is(pre, code, kbd, samp, [data-language], [class*="code-block"]),
 .cad-message-assistant
@@ -124,6 +164,14 @@ body.cad-bg div[class*="@container/main"] {
 body.cad-bg #page-header.cad-glass-panel {
   background-color: rgba(18, 28, 40, 0.26) !important;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Fallback: keep header glass even if class-based reattachment misses a render cycle */
+body.cad-bg #page-header {
+  background-color: rgba(18, 28, 40, 0.26) !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(14px) saturate(135%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(135%) !important;
 }
 
 body.cad-bg [data-scroll-root].cad-glass-panel {

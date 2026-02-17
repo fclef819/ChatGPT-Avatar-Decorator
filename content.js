@@ -15,6 +15,7 @@
   let toggleBtnScheduled = false;
   let fallbackObserverTimer = null;
   let fallbackObserverActive = false;
+  let postNavTimers = [];
   const rgbaCache = new Map();
   const TOGGLE_SHORTCUT_KEY = "A";
   const FALLBACK_OBSERVER_WINDOW_MS = 3500;
@@ -243,7 +244,7 @@
     if (!themeDirty && sameTheme && sameTargets) return;
 
     const root = document.documentElement;
-    root.classList.add("cad-root");
+    root.classList.add("cad-root", "cad-theme-active");
 
     const body = document.body;
     clearBackgroundStyles(lastBackgroundTargets);
@@ -292,7 +293,7 @@
     lastGlassTargets = [];
     lastProjectHeaderTargets = [];
     lastListDarkTargets = [];
-    root.classList.remove("cad-root", "cad-bg");
+    root.classList.remove("cad-root", "cad-bg", "cad-theme-active");
     body.classList.remove("cad-bg");
     root.style.removeProperty("--cad-bg-image");
     root.style.removeProperty("--cad-bg-overlay");
@@ -480,25 +481,6 @@
     return true;
   }
 
-  function applyMessageTheme(messageEl, role, profile) {
-    if (!messageEl) return;
-    if (role === "assistant") {
-      if (profile.assistantBg || profile.assistantText) {
-        messageEl.classList.add("cad-message-assistant");
-      } else {
-        messageEl.classList.remove("cad-message-assistant");
-      }
-      messageEl.classList.remove("cad-message-user");
-    } else {
-      if (profile.userBg || profile.userText) {
-        messageEl.classList.add("cad-message-user");
-      } else {
-        messageEl.classList.remove("cad-message-user");
-      }
-      messageEl.classList.remove("cad-message-assistant");
-    }
-  }
-
   function isFeatureEnabled(settings) {
     return settings?.global?.enabled ?? true;
   }
@@ -606,11 +588,8 @@
     applyAskTooltipLabel(profile);
     const nodes = document.querySelectorAll('div[data-message-author-role="assistant"]');
     nodes.forEach((el) => {
-      applyMessageTheme(el, "assistant", profile);
       decorateMessage(el, profile);
     });
-    const userNodes = document.querySelectorAll('div[data-message-author-role="user"]');
-    userNodes.forEach((el) => applyMessageTheme(el, "user", profile));
   }
 
   function applyAskTooltipLabel(profile) {
@@ -662,12 +641,6 @@
       el.classList.remove("cad-message");
       el.dataset.cadDecorated = "0";
     });
-    document.querySelectorAll(".cad-message-assistant").forEach((el) => {
-      el.classList.remove("cad-message-assistant");
-    });
-    document.querySelectorAll(".cad-message-user").forEach((el) => {
-      el.classList.remove("cad-message-user");
-    });
     messageImageCache = new WeakMap();
   }
 
@@ -682,13 +655,27 @@
   }
 
   function shouldProcessMutations(mutations) {
+    const messageOrTooltipSelector = [
+      'div[data-message-author-role="assistant"]',
+      '[aria-label*="に質問する"]',
+      '[title*="に質問する"]',
+      '[role="tooltip"]'
+    ].join(",");
     for (const mutation of mutations) {
       if (mutation.type !== "childList") continue;
       for (const node of mutation.addedNodes) {
-        if (!isInjectedNode(node)) return true;
+        if (isInjectedNode(node)) continue;
+        if (!(node instanceof Element)) continue;
+        if (node.matches(messageOrTooltipSelector) || node.querySelector(messageOrTooltipSelector)) {
+          return true;
+        }
       }
       for (const node of mutation.removedNodes) {
-        if (!isInjectedNode(node)) return true;
+        if (isInjectedNode(node)) continue;
+        if (!(node instanceof Element)) continue;
+        if (node.matches(messageOrTooltipSelector) || node.querySelector(messageOrTooltipSelector)) {
+          return true;
+        }
       }
     }
     return false;
@@ -713,6 +700,23 @@
     }, windowMs);
   }
 
+  function clearPostNavTimers() {
+    postNavTimers.forEach((id) => clearTimeout(id));
+    postNavTimers = [];
+  }
+
+  function schedulePostNavigationRescans() {
+    clearPostNavTimers();
+    // Project list and header often render after async hydration.
+    const delays = [250, 900, 1800, 3500, 5500];
+    delays.forEach((delay) => {
+      const id = setTimeout(() => {
+        scheduleScan(true);
+      }, delay);
+      postNavTimers.push(id);
+    });
+  }
+
   function scheduleScan(forceTheme = false) {
     if (forceTheme) themeDirty = true;
     if (scanScheduled) return;
@@ -734,7 +738,8 @@
     lastProjectId = projectId;
     resetDecorations();
     scheduleScan(true);
-    startFallbackObservation();
+    startFallbackObservation(8000);
+    schedulePostNavigationRescans();
   }
 
   function patchHistoryEvents() {
@@ -796,6 +801,11 @@
     patchHistoryEvents();
     refreshCachedSettings().then(() => scheduleScan(true));
     startFallbackObservation();
+    window.addEventListener("load", () => {
+      scheduleScan(true);
+      startFallbackObservation(8000);
+      schedulePostNavigationRescans();
+    });
     window.addEventListener("popstate", handleLocationChange);
     window.addEventListener("pointerup", handleUiNavigationTrigger, true);
     window.addEventListener("click", handleUiNavigationTrigger, true);
@@ -812,7 +822,8 @@
       rgbaCache.clear();
       refreshCachedSettings().then(() => {
         scheduleScan(true);
-        startFallbackObservation();
+        startFallbackObservation(8000);
+        schedulePostNavigationRescans();
       });
     }
   });
