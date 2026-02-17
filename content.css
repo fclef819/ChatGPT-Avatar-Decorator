@@ -189,11 +189,29 @@ body.cad-bg .cad-project-header-clear.bg-token-main-surface-primary {
 }
 
 body.cad-bg .cad-list-dark {
+  --cad-panel-pad-inline: clamp(10px, 1.8vw, 16px);
   background-color: rgba(8, 12, 18, 0.42) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 12px !important;
+  box-sizing: border-box !important;
+  padding-inline: 0 !important;
+  padding-bottom: 10px !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+body.cad-bg .cad-list-dark > .cad-project-header-clear {
+  box-sizing: border-box !important;
+  padding-left: var(--cad-panel-pad-inline) !important;
+  padding-right: var(--cad-panel-pad-inline) !important;
+  border-top-left-radius: 12px !important;
+  border-top-right-radius: 12px !important;
+  overflow: hidden !important;
+}
+
+body.cad-bg .cad-list-dark [class*="offset-padding-top-"] {
+  padding-left: var(--cad-panel-pad-inline) !important;
+  padding-right: var(--cad-panel-pad-inline) !important;
 }
 
 body.cad-bg .cad-list-dark [class*="bg-token-main-surface"],
