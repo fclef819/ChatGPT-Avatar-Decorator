@@ -16,9 +16,14 @@
   let fallbackObserverTimer = null;
   let fallbackObserverActive = false;
   let postNavTimers = [];
+  let navApplyTimer = null;
+  let navApplyPollTimer = null;
   const rgbaCache = new Map();
   const TOGGLE_SHORTCUT_KEY = "A";
   const FALLBACK_OBSERVER_WINDOW_MS = 3500;
+  const NAV_APPLY_DELAY_MS = 0;
+  const NAV_APPLY_MAX_WAIT_MS = 1400;
+  const NAV_APPLY_POLL_MS = 70;
 
   const defaultSettings = {
     global: {
@@ -717,6 +722,52 @@
     });
   }
 
+  function captureCurrentViewAnchor() {
+    return document.querySelector(
+      '[data-turn-id], [data-testid^="conversation-turn-"], #thread article, #thread main article'
+    );
+  }
+
+  function isViewAnchorGone(anchor) {
+    return !anchor || !anchor.isConnected || !document.contains(anchor);
+  }
+
+  function runNavigationApply() {
+    scheduleScan(true);
+    startFallbackObservation(8000);
+    schedulePostNavigationRescans();
+  }
+
+  function clearNavigationApplyTimers() {
+    if (navApplyTimer) {
+      clearTimeout(navApplyTimer);
+      navApplyTimer = null;
+    }
+    if (navApplyPollTimer) {
+      clearInterval(navApplyPollTimer);
+      navApplyPollTimer = null;
+    }
+  }
+
+  function scheduleNavigationApply({ oldAnchor, delayMs = NAV_APPLY_DELAY_MS } = {}) {
+    clearNavigationApplyTimers();
+    navApplyTimer = setTimeout(() => {
+      navApplyTimer = null;
+      if (isViewAnchorGone(oldAnchor)) {
+        runNavigationApply();
+        return;
+      }
+      const startedAt = Date.now();
+      navApplyPollTimer = setInterval(() => {
+        const elapsed = Date.now() - startedAt;
+        if (isViewAnchorGone(oldAnchor) || elapsed >= NAV_APPLY_MAX_WAIT_MS) {
+          clearNavigationApplyTimers();
+          runNavigationApply();
+        }
+      }, NAV_APPLY_POLL_MS);
+    }, delayMs);
+  }
+
   function scheduleScan(forceTheme = false) {
     if (forceTheme) themeDirty = true;
     if (scanScheduled) return;
@@ -734,12 +785,11 @@
     const path = window.location.pathname;
     const projectId = getProjectIdFromUrl();
     if (path === lastPath && projectId === lastProjectId) return;
+    const oldAnchor = captureCurrentViewAnchor();
     lastPath = path;
     lastProjectId = projectId;
     resetDecorations();
-    scheduleScan(true);
-    startFallbackObservation(8000);
-    schedulePostNavigationRescans();
+    scheduleNavigationApply({ oldAnchor });
   }
 
   function patchHistoryEvents() {
@@ -772,9 +822,7 @@
       ].join(",")
     );
     if (!hit) return;
-    scheduleScan();
-    startFallbackObservation(8000);
-    schedulePostNavigationRescans();
+    scheduleNavigationApply({ oldAnchor: captureCurrentViewAnchor() });
   }
 
   function handleShortcutToggle(event) {
