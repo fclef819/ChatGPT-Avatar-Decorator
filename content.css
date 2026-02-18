@@ -200,7 +200,7 @@ body.cad-bg .cad-list-dark {
   -webkit-backdrop-filter: none !important;
 }
 
-body.cad-bg .cad-list-dark > .cad-project-header-clear {
+body.cad-bg .cad-list-dark .cad-project-header-clear {
   box-sizing: border-box !important;
   padding-left: var(--cad-panel-pad-inline) !important;
   padding-right: var(--cad-panel-pad-inline) !important;

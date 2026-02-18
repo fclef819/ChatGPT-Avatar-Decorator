@@ -326,13 +326,11 @@
 
   function getProjectHeaderTargets() {
     const targets = [];
-    const listArea = document.querySelector(
-      'div.flex.min-w-0.flex-col.gap-8.pb-6, div[class*="min-w-0"][class*="flex-col"][class*="gap-8"][class*="pb-6"]'
-    );
+    const listArea = getProjectListArea();
     if (!listArea) return targets;
-    const first = listArea.firstElementChild;
-    if (first) targets.push(first);
-    first
+    const header = getProjectListHeader(listArea) || listArea.firstElementChild;
+    if (header) targets.push(header);
+    header
       ?.querySelectorAll(
         '[class*="bg-token-main-surface-primary"], [class*="bg-token-main-surface-secondary"], [class*="main-surface-primary"], [class*="main-surface-secondary"], [style*="main-surface-primary"], [style*="main-surface-secondary"]'
       )
@@ -342,11 +340,30 @@
 
   function getListDarkTargets() {
     const targets = [];
-    const listArea = document.querySelector(
-      'div.flex.min-w-0.flex-col.gap-8.pb-6, div[class*="min-w-0"][class*="flex-col"][class*="gap-8"][class*="pb-6"]'
-    );
+    const listArea = getProjectListArea();
     if (listArea) targets.push(listArea);
     return Array.from(new Set(targets));
+  }
+
+  function getProjectListArea() {
+    const legacy = document.querySelector(
+      'div.flex.min-w-0.flex-col.gap-8.pb-6, div[class*="min-w-0"][class*="flex-col"][class*="gap-8"][class*="pb-6"]'
+    );
+    if (legacy) return legacy;
+    const stickyHeader = document.querySelector(
+      'div[class*="offset-padding-top-"][class*="sticky"][class*="top-0"][class*="flex-col"][class*="gap-8"]'
+    );
+    if (!stickyHeader || !stickyHeader.closest("#thread")) return null;
+    return stickyHeader.parentElement instanceof Element ? stickyHeader.parentElement : null;
+  }
+
+  function getProjectListHeader(listArea) {
+    if (!listArea) return null;
+    const sticky = listArea.querySelector(
+      ':scope > div[class*="offset-padding-top-"][class*="sticky"], :scope > div[class*="sticky"][class*="top-0"][class*="gap-8"]'
+    );
+    if (sticky) return sticky;
+    return listArea.firstElementChild instanceof Element ? listArea.firstElementChild : null;
   }
 
   function applyBackgroundStyles(targets, image, overlayPercent) {
