@@ -204,6 +204,7 @@ body.cad-bg .cad-list-dark .cad-project-header-clear {
   box-sizing: border-box !important;
   padding-left: var(--cad-panel-pad-inline) !important;
   padding-right: var(--cad-panel-pad-inline) !important;
+  padding-bottom: 10px !important;
   border-top-left-radius: 12px !important;
   border-top-right-radius: 12px !important;
   overflow: hidden !important;
