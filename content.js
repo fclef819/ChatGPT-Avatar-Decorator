@@ -18,12 +18,19 @@
   let postNavTimers = [];
   let navApplyTimer = null;
   let navApplyPollTimer = null;
+  let scanDebounceTimer = null;
+  let queuedScanMode = "visible";
+  let queuedForceTheme = false;
+  let observerRoot = null;
+  let pendingDirtyMessages = new Set();
   const rgbaCache = new Map();
   const TOGGLE_SHORTCUT_KEY = "A";
   const FALLBACK_OBSERVER_WINDOW_MS = 3500;
   const NAV_APPLY_DELAY_MS = 0;
   const NAV_APPLY_MAX_WAIT_MS = 1400;
   const NAV_APPLY_POLL_MS = 70;
+  const SCAN_DEBOUNCE_MS = 90;
+  const VISIBILITY_MARGIN_PX = 480;
 
   const defaultSettings = {
     global: {
@@ -571,7 +578,7 @@
               clearTheme();
             }
             scheduleToggleButtonUpdate(featureSettings);
-            scheduleScan(true);
+            scheduleScan(true, "full", 0);
             if (notify) showToggleToast(isFeatureEnabled(featureSettings));
             resolve(true);
           }
@@ -595,7 +602,7 @@
     }, 900);
   }
 
-  function scanAndDecorate() {
+  function scanAndDecorate(mode = "visible") {
     if (!settingsLoaded) return;
     const settings = cachedSettings;
     featureSettings = settings;
@@ -608,10 +615,53 @@
     const profile = getActiveProfile(settings);
     applyTheme(profile);
     applyAskTooltipLabel(profile);
-    const nodes = document.querySelectorAll('div[data-message-author-role="assistant"]');
+    const nodes = getAssistantMessageTargets(mode);
     nodes.forEach((el) => {
       decorateMessage(el, profile);
     });
+  }
+
+  function getAssistantMessageTargets(mode = "visible") {
+    if (mode === "full") {
+      return Array.from(document.querySelectorAll('div[data-message-author-role="assistant"]'));
+    }
+    if (mode === "dirty") {
+      const dirty = Array.from(pendingDirtyMessages).filter(
+        (el) => el?.isConnected && el.matches?.('div[data-message-author-role="assistant"]')
+      );
+      pendingDirtyMessages.clear();
+      if (dirty.length) return dirty;
+    }
+    const scrollRoot = getPrimaryScrollRoot();
+    if (!scrollRoot) {
+      return Array.from(document.querySelectorAll('div[data-message-author-role="assistant"]'));
+    }
+    const rootRect = scrollRoot.getBoundingClientRect();
+    const minTop = rootRect.top - VISIBILITY_MARGIN_PX;
+    const maxBottom = rootRect.bottom + VISIBILITY_MARGIN_PX;
+    const visible = [];
+    scrollRoot
+      .querySelectorAll('div[data-message-author-role="assistant"]')
+      .forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        if (rect.bottom >= minTop && rect.top <= maxBottom) {
+          visible.push(el);
+        }
+      });
+    return visible;
+  }
+
+  function getPrimaryScrollRoot() {
+    const thread = document.getElementById("thread");
+    if (thread) {
+      const inThread = thread.closest("[data-scroll-root]");
+      if (inThread) return inThread;
+    }
+    return (
+      document.querySelector("[data-scroll-root]") ||
+      document.getElementById("main") ||
+      document.body
+    );
   }
 
   function applyAskTooltipLabel(profile) {
@@ -676,6 +726,24 @@
     );
   }
 
+  function collectDirtyAssistantNodes(mutations) {
+    const dirty = new Set();
+    for (const mutation of mutations) {
+      if (mutation.type !== "childList") continue;
+      mutation.addedNodes.forEach((node) => {
+        if (!(node instanceof Element) || isInjectedNode(node)) return;
+        if (node.matches('div[data-message-author-role="assistant"]')) {
+          dirty.add(node);
+          return;
+        }
+        node
+          .querySelectorAll?.('div[data-message-author-role="assistant"]')
+          .forEach((el) => dirty.add(el));
+      });
+    }
+    return dirty;
+  }
+
   function shouldProcessMutations(mutations) {
     const messageOrTooltipSelector = [
       'div[data-message-author-role="assistant"]',
@@ -704,14 +772,36 @@
   }
 
   const observer = new MutationObserver((mutations) => {
+    const dirty = collectDirtyAssistantNodes(mutations);
+    if (dirty.size > 0) {
+      dirty.forEach((el) => pendingDirtyMessages.add(el));
+      scheduleScan(false, "dirty");
+      startFallbackObservation(1200);
+      return;
+    }
     if (!shouldProcessMutations(mutations)) return;
-    scheduleScan();
+    scheduleScan(false, "visible");
     startFallbackObservation(1200);
   });
 
+  function getObserverTarget() {
+    return (
+      document.getElementById("thread") ||
+      document.querySelector("[data-scroll-root]") ||
+      document.getElementById("main") ||
+      document.body
+    );
+  }
+
   function startFallbackObservation(windowMs = FALLBACK_OBSERVER_WINDOW_MS) {
-    if (!fallbackObserverActive) {
-      observer.observe(document.body, { childList: true, subtree: true });
+    const nextTarget = getObserverTarget();
+    if (observerRoot !== nextTarget) {
+      observer.disconnect();
+      observerRoot = nextTarget;
+      fallbackObserverActive = false;
+    }
+    if (!fallbackObserverActive && observerRoot) {
+      observer.observe(observerRoot, { childList: true, subtree: true });
       fallbackObserverActive = true;
     }
     if (fallbackObserverTimer) clearTimeout(fallbackObserverTimer);
@@ -733,7 +823,7 @@
     const delays = [250, 900, 1800, 3500, 5500];
     delays.forEach((delay) => {
       const id = setTimeout(() => {
-        scheduleScan(true);
+        scheduleScan(true, "full", 0);
       }, delay);
       postNavTimers.push(id);
     });
@@ -750,7 +840,7 @@
   }
 
   function runNavigationApply() {
-    scheduleScan(true);
+    scheduleScan(true, "full", 0);
     startFallbackObservation(8000);
     schedulePostNavigationRescans();
   }
@@ -785,14 +875,31 @@
     }, delayMs);
   }
 
-  function scheduleScan(forceTheme = false) {
-    if (forceTheme) themeDirty = true;
-    if (scanScheduled) return;
-    scanScheduled = true;
-    requestAnimationFrame(() => {
-      scanScheduled = false;
-      scanAndDecorate();
-    });
+  function scheduleScan(forceTheme = false, mode = "visible", debounceMs = SCAN_DEBOUNCE_MS) {
+    if (forceTheme) queuedForceTheme = true;
+    if (mode === "full") {
+      queuedScanMode = "full";
+    } else if (mode === "dirty" && queuedScanMode !== "full") {
+      queuedScanMode = "dirty";
+    } else if (queuedScanMode !== "full" && queuedScanMode !== "dirty") {
+      queuedScanMode = "visible";
+    }
+
+    if (scanDebounceTimer) clearTimeout(scanDebounceTimer);
+    scanDebounceTimer = setTimeout(() => {
+      scanDebounceTimer = null;
+      if (scanScheduled) return;
+      scanScheduled = true;
+      requestAnimationFrame(() => {
+        const shouldForceTheme = queuedForceTheme;
+        const modeToRun = queuedScanMode;
+        queuedForceTheme = false;
+        queuedScanMode = "visible";
+        if (shouldForceTheme) themeDirty = true;
+        scanScheduled = false;
+        scanAndDecorate(modeToRun);
+      });
+    }, Math.max(0, debounceMs));
   }
 
   let lastPath = window.location.pathname;
@@ -865,17 +972,17 @@
 
   function start() {
     patchHistoryEvents();
-    refreshCachedSettings().then(() => scheduleScan(true));
+    refreshCachedSettings().then(() => scheduleScan(true, "full", 0));
     startFallbackObservation();
     window.addEventListener("load", () => {
-      scheduleScan(true);
+      scheduleScan(true, "full", 0);
       startFallbackObservation(8000);
       schedulePostNavigationRescans();
     });
     window.addEventListener("popstate", handleLocationChange);
     window.addEventListener("pointerup", handleUiNavigationTrigger, true);
     window.addEventListener("click", handleUiNavigationTrigger, true);
-    window.addEventListener("resize", () => scheduleScan(true));
+    window.addEventListener("resize", () => scheduleScan(true, "visible"));
     window.addEventListener("keydown", handleShortcutToggle, true);
   }
 
@@ -887,7 +994,7 @@
       messageImageCache = new WeakMap();
       rgbaCache.clear();
       refreshCachedSettings().then(() => {
-        scheduleScan(true);
+        scheduleScan(true, "full", 0);
         startFallbackObservation(8000);
         schedulePostNavigationRescans();
       });
